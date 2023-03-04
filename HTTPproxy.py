@@ -4,7 +4,7 @@ import socket
 from socket import *
 from optparse import OptionParser
 import sys
-from threading import Thread
+from threading import *
 from time import *
 
 # Signal handler for pressing ctrl-c
@@ -32,6 +32,9 @@ if port is None:
 # Set up signal handling (ctrl-c)
 signal.signal(signal.SIGINT, ctrl_c_pressed)
 
+# def parse_request(request):
+    # FIXME
+
 # Once a client has connected, the proxy should read data from the client
 # and check for a properly formatted HTTP request. 
 # aka <METHOD> <URL> <HTTP VERSION>
@@ -43,7 +46,7 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 # TODO: Set up sockets to receive requests
 def handle_client(client_socket, client_addr):
     # recv request
-    data = client_socket.recv(1024)
+    request = client_socket.recv(4096)
     # parse request
 
     # fetch data from origin
@@ -67,12 +70,41 @@ server_socket.listen()
 # Without this code the autograder may cause some tests to fail
 # spuriously.
 
+# Receive loop from client to proxy. This gathers requests that
+# will eventually be sent to the origin server.
 while True:
     client_socket, client_addr = server_socket.accept()
     # Use this line to handle each connection in a single thread.
     handle_client(client_socket, client_addr)
     # Use this line to handle each connection in a separate thread.
     Thread(target=handle_client, args=(client_socket, client_addr)).start()
+
+# Receive loop from origin server to proxy. This gathers replies that
+# will eventually be sent back to the client.
+while True:
+    client_socket, client_addr = server_socket.accept()
+    # Use this line to handle each connection in a single thread.
+    handle_client(client_socket, client_addr)
+    # Use this line to handle each connection in a separate thread.
+    Thread(target=handle_client, args=(client_socket, client_addr)).start()
+
+"""
+# recv request from client
+request = b''
+while True:
+    temp = client_socket.recv(1024)
+    request += temp
+    if request.endswith(b'\r\n\r\n'):
+        break
+
+# recv response from origin
+while True:
+    origin_socket.sendall(request)
+    temp = origin_socket.recv(1024)
+    if temp == b'':
+        break
+    request += temp
+"""
 
 
 # Example, accept from client:
