@@ -36,16 +36,20 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 # and check for a properly formatted HTTP request. 
 # aka <METHOD> <URL> <HTTP VERSION>
 # For other headers: <HEADER NAME>: <HEADER VALUE>
-
+##########################################################################
 # “400 Bad Request” for malformed requests or if headers are not properly 
 # formatted for parsing.
 # "501 Not Implemented” for valid HTTP methods other than GET.
 # TODO: Set up sockets to receive requests
 def handle_client(client_socket, client_addr):
     # recv request
+    data = client_socket.recv(1024)
     # parse request
+
     # fetch data from origin
+
     # send response
+
     for i in range(10):
         sleep(1)
         print(f'Handling request from client {client_addr}')
@@ -66,7 +70,7 @@ server_socket.listen()
 while True:
     client_socket, client_addr = server_socket.accept()
     # Use this line to handle each connection in a single thread.
-    # handle_client(client_socket, client_addr)
+    handle_client(client_socket, client_addr)
     # Use this line to handle each connection in a separate thread.
     Thread(target=handle_client, args=(client_socket, client_addr)).start()
 
