@@ -11,9 +11,7 @@ from time import *
 def ctrl_c_pressed(signal, frame):
 	sys.exit(0)
 
-# Proxy should handle both DNS and IPv4 URLs. When it starts,
-# the first thing it does is to establish a socket that it can use
-# to listen for incoming connections. Port is specified on command line
+# Proxy should handle both DNS and IPv4 URLs. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # Start of program execution
 # Parse out the command line server address and port number to listen to
@@ -28,6 +26,33 @@ if address is None:
     address = 'localhost'
 if port is None:
     port = 2100
+
+# Set up listening socket for incoming connections
+server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((address, port))
+server_socket.listen()
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+# Receive loop from client to proxy. This gathers requests that
+# will eventually be sent to the origin server.
+while True:
+    # Wait for an incoming connection
+    client_socket, client_addr = server_socket.accept()
+
+    # Use this line to handle each connection in a single thread.
+    handle_client(client_socket, client_addr)
+
+    # Use this line to handle each connection in a separate thread.
+    Thread(target=handle_client, args=(client_socket, client_addr)).start()
+
+# Receive loop from origin server to proxy. This gathers replies that
+# will eventually be sent back to the client.
+while True:
+    client_socket, client_addr = server_socket.accept()
+    # Use this line to handle each connection in a single thread.
+    handle_client(client_socket, client_addr)
+    # Use this line to handle each connection in a separate thread.
+    Thread(target=handle_client, args=(client_socket, client_addr)).start()
 
 # Set up signal handling (ctrl-c)
 signal.signal(signal.SIGINT, ctrl_c_pressed)
@@ -47,7 +72,8 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 def handle_client(client_socket, client_addr):
     # recv request
     request = client_socket.recv(4096)
-    # parse request
+
+    # Parse request
 
     # fetch data from origin
 
@@ -58,35 +84,6 @@ def handle_client(client_socket, client_addr):
         print(f'Handling request from client {client_addr}')
     print('Client request handled')
     client_socket.close()
-
-server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('', 2100))
-server_socket.listen()
-
-# IMPORTANT!
-# Immediately after you create your proxy's listening socket add
-# the following code (where "skt" is the name of the socket here):
-# skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-# Without this code the autograder may cause some tests to fail
-# spuriously.
-
-# Receive loop from client to proxy. This gathers requests that
-# will eventually be sent to the origin server.
-while True:
-    client_socket, client_addr = server_socket.accept()
-    # Use this line to handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
-    # Use this line to handle each connection in a separate thread.
-    Thread(target=handle_client, args=(client_socket, client_addr)).start()
-
-# Receive loop from origin server to proxy. This gathers replies that
-# will eventually be sent back to the client.
-while True:
-    client_socket, client_addr = server_socket.accept()
-    # Use this line to handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
-    # Use this line to handle each connection in a separate thread.
-    Thread(target=handle_client, args=(client_socket, client_addr)).start()
 
 """
 # recv request from client
