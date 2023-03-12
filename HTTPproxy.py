@@ -6,15 +6,7 @@ from optparse import OptionParser
 import sys
 from threading import *
 from time import *
-
-# Signal handler for pressing ctrl-c
-def ctrl_c_pressed(signal, frame):
-	sys.exit(0)
-
-# Set up signal handling (ctrl-c)
-signal.signal(signal.SIGINT, ctrl_c_pressed)
-
-# Proxy should handle both DNS and IPv4 URLs. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+from urllib.parse import urlparse
 
 # Start of program execution
 # Parse out the command line server address and port number to listen to
@@ -36,42 +28,79 @@ listening_socket.bind((address, port))
 listening_socket.listen()
 listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# Once a client has connected, the proxy should read data from the client
-# and check for a properly formatted HTTP request. 
-# aka <METHOD> <URL> <HTTP VERSION>
-# For other headers: <HEADER NAME>: <HEADER VALUE>
-##########################################################################
-# “400 Bad Request” for malformed requests or if headers are not properly 
-# formatted for parsing.
-# "501 Not Implemented” for valid HTTP methods other than GET.
+# Signal handler for pressing ctrl-c
+def ctrl_c_pressed(signal, frame):
+	sys.exit(0)
+
+# Set up signal handling (ctrl-c)
+signal.signal(signal.SIGINT, ctrl_c_pressed)
+
+# Receives data from client and parses it to check that it is a valid request.
+# Sets up the server socket and sends the client request, then listens for 
+# the reply and sends it back to the client.
 def handle_client(client_socket, client_addr):
     # recv request
     request = client_socket.recv(4096)
+    while True:
+        temp = client_socket.recv(4096)
+        request += temp
+        if request.endswith(b'\r\n\r\n'):
+            break
 
     # Parse request
-    parse_request(request)
+    parsed_request = parse_request(request)
 
     # Set up server socket
     server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.connect(address, port)
 
-    # Fetch data from origin
-    server_socket.sendall(request)
-    data = server_socket.recv(4096)
+    while True:
+        # Fetch data from origin
+        server_socket.sendall(parsed_request)
+        data = server_socket.recv(4096)
 
-    # Send response
-    client_socket.sendall(data)
+        # Send response
+        client_socket.sendall(data)
 
-    for i in range(10):
-        sleep(1)
-        print(f'Handling request from client {client_addr}')
-    print('Client request handled')
-    client_socket.close()
+        for i in range(10):
+            sleep(1)
+            print(f'Handling request from client {client_addr}')
+        print('Client request handled')
+        client_socket.close()
 
+# Once a client has connected, the proxy should read data from the client
+# and check for a properly formatted HTTP request. 
+# aka <METHOD> <URL> <HTTP VERSION>
+# For other headers: <HEADER NAME>: <HEADER VALUE>
+##########################################################################
+# Checks that the request is properly formatted.
+# Returns error messages otherwise.
+# “400 Bad Request” for malformed requests or if headers are not properly 
+# formatted for parsing.
+# "501 Not Implemented” for valid HTTP methods other than GET.
 def parse_request(request):
     list = request.split(" ")
     if (list[0] != "GET"):
         return "501 Not Implemented"
+
+    if (list[2] != "HTTP/1.0"):
+        return "400 Bad Request"
+
+    new_request = list[0] + " / " + list[2] + "\nHost: " + urlparse(list[1]).hostname
+    + "\nConnection: close"
+
+    return new_request
+
+    """
+    Example, accept from client:
+        GET http://www.google.com/ HTTP/1.0
+
+    Send to origin server:
+        GET / HTTP/1.0
+        Host: www.google.com
+        Connection: close
+        (Additional client-specified headers, if any.)
+    """
 
 # Receive loop from client to proxy. This gathers requests that
 # will eventually be sent to the origin server.
@@ -79,10 +108,10 @@ while True:
     # Wait for an incoming connection
     client_socket, client_addr = listening_socket.accept()
 
-    # Use this line to handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
+    # Handle each connection in a single thread.
+    #handle_client(client_socket, client_addr)
 
-    # Use this line to handle each connection in a separate thread.
+    # Handle each connection in a separate thread.
     Thread(target=handle_client, args=(client_socket, client_addr)).start()
 
 
@@ -103,13 +132,3 @@ while True:
         break
     request += temp
 """
-
-
-# Example, accept from client:
-    # GET http://www.google.com/ HTTP/1.0
-
-# Send to origin server:
-    # GET / HTTP/1.0
-    # Host: www.google.com
-    # Connection: close
-    # (Additional client-specified headers, if any.)
