@@ -11,6 +11,9 @@ from time import *
 def ctrl_c_pressed(signal, frame):
 	sys.exit(0)
 
+# Set up signal handling (ctrl-c)
+signal.signal(signal.SIGINT, ctrl_c_pressed)
+
 # Proxy should handle both DNS and IPv4 URLs. %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # Start of program execution
@@ -28,37 +31,10 @@ if port is None:
     port = 2100
 
 # Set up listening socket for incoming connections
-server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((address, port))
-server_socket.listen()
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-# Receive loop from client to proxy. This gathers requests that
-# will eventually be sent to the origin server.
-while True:
-    # Wait for an incoming connection
-    client_socket, client_addr = server_socket.accept()
-
-    # Use this line to handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
-
-    # Use this line to handle each connection in a separate thread.
-    Thread(target=handle_client, args=(client_socket, client_addr)).start()
-
-# Receive loop from origin server to proxy. This gathers replies that
-# will eventually be sent back to the client.
-while True:
-    client_socket, client_addr = server_socket.accept()
-    # Use this line to handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
-    # Use this line to handle each connection in a separate thread.
-    Thread(target=handle_client, args=(client_socket, client_addr)).start()
-
-# Set up signal handling (ctrl-c)
-signal.signal(signal.SIGINT, ctrl_c_pressed)
-
-# def parse_request(request):
-    # FIXME
+listening_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+listening_socket.bind((address, port))
+listening_socket.listen()
+listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Once a client has connected, the proxy should read data from the client
 # and check for a properly formatted HTTP request. 
@@ -68,22 +44,47 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 # “400 Bad Request” for malformed requests or if headers are not properly 
 # formatted for parsing.
 # "501 Not Implemented” for valid HTTP methods other than GET.
-# TODO: Set up sockets to receive requests
 def handle_client(client_socket, client_addr):
     # recv request
     request = client_socket.recv(4096)
 
     # Parse request
+    parse_request(request)
 
-    # fetch data from origin
+    # Set up server socket
+    server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect(address, port)
 
-    # send response
+    # Fetch data from origin
+    server_socket.sendall(request)
+    data = server_socket.recv(4096)
+
+    # Send response
+    client_socket.sendall(data)
 
     for i in range(10):
         sleep(1)
         print(f'Handling request from client {client_addr}')
     print('Client request handled')
     client_socket.close()
+
+def parse_request(request):
+    list = request.split(" ")
+    if (list[0] != "GET"):
+        return "501 Not Implemented"
+
+# Receive loop from client to proxy. This gathers requests that
+# will eventually be sent to the origin server.
+while True:
+    # Wait for an incoming connection
+    client_socket, client_addr = listening_socket.accept()
+
+    # Use this line to handle each connection in a single thread.
+    handle_client(client_socket, client_addr)
+
+    # Use this line to handle each connection in a separate thread.
+    Thread(target=handle_client, args=(client_socket, client_addr)).start()
+
 
 """
 # recv request from client
