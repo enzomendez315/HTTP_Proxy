@@ -68,11 +68,6 @@ def handle_client(client_socket, client_addr):
         print('Client request handled')
         client_socket.close()
 
-# Once a client has connected, the proxy should read data from the client
-# and check for a properly formatted HTTP request. 
-# aka <METHOD> <URL> <HTTP VERSION>
-# For other headers: <HEADER NAME>: <HEADER VALUE>
-##########################################################################
 # Checks that the request is properly formatted.
 # Returns error messages otherwise.
 # “400 Bad Request” for malformed requests or if headers are not properly 
@@ -113,22 +108,3 @@ while True:
 
     # Handle each connection in a separate thread.
     Thread(target=handle_client, args=(client_socket, client_addr)).start()
-
-
-"""
-# recv request from client
-request = b''
-while True:
-    temp = client_socket.recv(1024)
-    request += temp
-    if request.endswith(b'\r\n\r\n'):
-        break
-
-# recv response from origin
-while True:
-    origin_socket.sendall(request)
-    temp = origin_socket.recv(1024)
-    if temp == b'':
-        break
-    request += temp
-"""
