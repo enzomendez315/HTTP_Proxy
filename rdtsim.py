@@ -71,7 +71,7 @@ class Pkt:
     def __init__(self, seqnum, acknum, checksum, payload):
         self.seqnum = seqnum            # type: integer
         self.acknum = acknum            # type: integer
-        self.checksum = checksum        # type: integer
+        self.checksum = checksum        # type: integer. Even if one bit of payload changes, checksum changes
         self.payload = payload          # type: bytes[Msg.MSG_SIZE]
 
     def __str__(self):
@@ -106,12 +106,16 @@ class EntityA:
     # zero and seqnum_limit-1, inclusive.  E.g., if seqnum_limit is 16, then
     # all seqnums must be in the range 0-15.
     def __init__(self, seqnum_limit):
-        pass
+        self.seqnum_limit = seqnum_limit    # upper bound for seqnum
+        self.seqnum = 0
+        self.acknum = 0
+        self.checksum = 0
+        # self.checksum = seqnum + acknum + payload.length
 
     # Called from layer 5, passed the data to be sent to other side.
     # The argument `message` is a Msg containing the data to be sent.
     def output(self, message):
-        pass
+        self.message = message.data
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
     # The argument `packet` is a Pkt containing the newly arrived packet.
@@ -128,11 +132,26 @@ class EntityB:
     #
     # See comment for the meaning of seqnum_limit.
     def __init__(self, seqnum_limit):
-        pass
+        self.seqnum_limit = seqnum_limit    # upper bound for seqnum
+        self.seqnum = 0
+        self.acknum = 0
+        self.checksum = 0
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityB.
     # The argument `packet` is a Pkt containing the newly arrived packet.
     def input(self, packet):
+        # For first packet that arrives:
+        # open up packet
+        # save sequence number
+        self.seqnum = packet.seqnum
+        # send it to layer 5
+
+        # For any other packet:
+        # verify checksum
+            # self.checksum = seqnum + acknum + payload.length
+        # do all the previous steps
+        # Case 1: everything is fine - send to layer 5
+        # Case 2: checksum is wrong - send packet back
         pass
 
     # Called when B's timer goes off.
