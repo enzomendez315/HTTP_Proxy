@@ -106,7 +106,7 @@ class EntityA:
     # zero and seqnum_limit-1, inclusive.  E.g., if seqnum_limit is 16, then
     # all seqnums must be in the range 0-15.
     def __init__(self, seqnum_limit):
-        self.seqnum_limit = seqnum_limit    # upper bound for seqnum
+        self.seqnum_limit = seqnum_limit    # upper bound for seqnum. seqnum = 0 if you exceed it
         self.seqnum = 0
         self.acknum = 0
         self.checksum = 0
@@ -116,10 +116,20 @@ class EntityA:
     # The argument `message` is a Msg containing the data to be sent.
     def output(self, message):
         self.message = message.data
+        # send packet
+        # call start_timer()
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
     # The argument `packet` is a Pkt containing the newly arrived packet.
     def input(self, packet):
+        # check if entityB sends something back
+        # Case 1: it does send something
+            # check the acknum. It will either be right or wrong
+            # Case 1.1: right acknum
+                # call stop_timer()
+            # Case 1.2: wrong acknum
+        # Case 2: it doesn't send anything
+            # resend packet. Hint: use the timer
         pass
 
     # Called when A's timer goes off.
@@ -132,7 +142,7 @@ class EntityB:
     #
     # See comment for the meaning of seqnum_limit.
     def __init__(self, seqnum_limit):
-        self.seqnum_limit = seqnum_limit    # upper bound for seqnum
+        self.seqnum_limit = seqnum_limit    # upper bound for seqnum. seqnum = 0 if you exceed it
         self.seqnum = 0
         self.acknum = 0
         self.checksum = 0
@@ -145,6 +155,7 @@ class EntityB:
         # save sequence number
         self.seqnum = packet.seqnum
         # send it to layer 5
+        # send back acknum? (Not sure if this is step is in the right order)
 
         # For any other packet:
         # verify checksum
