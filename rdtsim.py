@@ -110,18 +110,34 @@ class EntityA:
         self.seqnum = 0
         self.acknum = 0
         self.checksum = 0
-        # self.checksum = seqnum + acknum + payload.length
+        # checksum = seqnum + acknum + payload length
 
     # Called from layer 5, passed the data to be sent to other side.
     # The argument `message` is a Msg containing the data to be sent.
     def output(self, message):
-        self.message = message.data
-        # send packet
-        # call start_timer()
+        # save message
+        self.payload = message.data
+
+        # send packet to entityB
+        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+
+        # start timer to check for dropped packets
+        start_timer(self, 10)
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
     # The argument `packet` is a Pkt containing the newly arrived packet.
+    # This method is called when a packet sent from the B-side arrives at the A-side.
     def input(self, packet):
+        # check the acknum. It will either be right or wrong
+        if (self.acknum == packet.acknum):
+            # case 1: right acknum
+            stop_timer(self)
+        else:
+            # case 2: wrong acknum. Resend packet
+            stop_timer(self)
+            to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+            start_timer(self, 10)
+
         # check if entityB sends something back
         # Case 1: it does send something
             # check the acknum. It will either be right or wrong
@@ -130,11 +146,15 @@ class EntityA:
             # Case 1.2: wrong acknum
         # Case 2: it doesn't send anything
             # resend packet. Hint: use the timer
-        pass
 
-    # Called when A's timer goes off.
-    def timer_interrupt(self):
-        pass
+    # Called when A's timer goes off (thus generating a timer interrupt).
+    # This method can be used to control the retransmission of packets.
+    def timer_interrupt(self):    
+        while (True):
+            if (get_time(self) > 10):
+                stop_timer(self)
+                to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+                break
 
 class EntityB:
     # The following method will be called once (only) before any other
@@ -152,17 +172,23 @@ class EntityB:
     def input(self, packet):
         # For first packet that arrives:
         # open up packet
-        # save sequence number
+        # save sequence number and payload
         self.seqnum = packet.seqnum
+        self.payload = packet.payload
+
         # send it to layer 5
+        to_layer5(self, Msg(self.payload))
+
         # send back acknum? (Not sure if this is step is in the right order)
 
         # For any other packet:
-        # verify checksum
-            # self.checksum = seqnum + acknum + payload.length
+        # verify checksum: checksum = seqnum + acknum + payload length
+        if (self.checksum == packet.seqnum + packet.acknum + len(packet.payload)):
+            self.seqnum += 1
+            self.acknum += 1
         # do all the previous steps
-        # Case 1: everything is fine - send to layer 5
-        # Case 2: checksum is wrong - send packet back
+        # case 1: everything is fine - send to layer 5
+        # case 2: checksum is wrong - send packet back
         pass
 
     # Called when B's timer goes off.
