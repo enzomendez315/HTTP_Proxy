@@ -110,6 +110,7 @@ class EntityA:
         self.seqnum = 0
         self.acknum = 0
         self.checksum = 0
+        self.payload = 0
 
 
     # Called from layer 5, passed the data to be sent to other side.
