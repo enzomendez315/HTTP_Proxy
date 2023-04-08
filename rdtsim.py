@@ -172,6 +172,7 @@ class EntityA:
         else:
             return self.seqnum + 1
 
+
     # Called when A's timer goes off (thus generating a timer interrupt).
     # This method can be used to control the retransmission of packets.
     def timer_interrupt(self):    
@@ -199,12 +200,14 @@ class EntityB:
         # case 1: packet is out of order
         # use acknum to verify it isn't
         # if it is, resend last packet that was received
-        
+        self.temp_seqnum = self.increment_seqnum()
+        if (packet.seqnum != self.temp_seqnum and self.checksum != 0):
+            to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
         # case 2: packet is corrupted
         # use checksum to verify it isn't
         # if it is, resend last packet but don't change seqnum
-
+        
 
         # For first packet that arrives:
         # open up packet
@@ -226,6 +229,15 @@ class EntityB:
         # case 1: everything is fine - send to layer 5
         # case 2: checksum is wrong - send packet back
         pass
+
+
+    # Called when sequence number needs to be incremented
+    # Sequence number is reset (seqnum = 0) when it's at the end of range
+    def increment_seqnum(self):
+        if (self.seqnum == self.seqnum_limit - 1):
+            return 0
+        else:
+            return self.seqnum + 1
 
 
     # Called when B's timer goes off.
