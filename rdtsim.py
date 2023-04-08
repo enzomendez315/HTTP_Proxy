@@ -71,7 +71,7 @@ class Pkt:
     def __init__(self, seqnum, acknum, checksum, payload):
         self.seqnum = seqnum            # type: integer
         self.acknum = acknum            # type: integer
-        self.checksum = checksum        # type: integer. Even if one bit of payload changes, checksum changes
+        self.checksum = checksum        # type: integer
         self.payload = payload          # type: bytes[Msg.MSG_SIZE]
 
     def __str__(self):
@@ -192,6 +192,7 @@ class EntityB:
         self.seqnum = 0
         self.acknum = 0
         self.checksum = 0
+        self.payload = 0
 
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityB.
@@ -206,29 +207,21 @@ class EntityB:
 
         # case 2: packet is corrupted
         # use checksum to verify it isn't
-        # if it is, resend last packet but don't change seqnum
-        
+        # if it is, resend last packet that was received
+        self.temp_checksum = 2 * self.temp_seqnum + len(packet.payload)
+        if (packet.checksum != self.temp_checksum and self.checksum != 0):
+            to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
-        # For first packet that arrives:
-        # open up packet
-        # save sequence number and payload
         self.seqnum = packet.seqnum
+        self.acknum = self.seqnum
+        self.checksum = packet.checksum
         self.payload = packet.payload
 
         # send it to layer 5
         to_layer5(self, Msg(self.payload))
 
-        # send back acknum? (Not sure if this is step is in the right order)
-
-        # For any other packet:
-        # verify checksum: checksum = seqnum + acknum + payload length
-        if (self.checksum == packet.seqnum + packet.acknum + len(packet.payload)):
-            self.seqnum += 1
-            self.acknum += 1
-        # do all the previous steps
-        # case 1: everything is fine - send to layer 5
-        # case 2: checksum is wrong - send packet back
-        pass
+        # send back new packet
+        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
 
     # Called when sequence number needs to be incremented
