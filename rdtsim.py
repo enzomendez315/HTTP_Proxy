@@ -125,11 +125,9 @@ class EntityA:
         # start timer to check for dropped packets
         start_timer(self, 10)
 
-        # increment sequence number. Reset it if it's at the end of range
-        if (self.seqnum == self.seqnum_limit - 1):
-            self.seqnum = 0
-        else:
-            self.seqnum += 1
+        # increment sequence number
+        self.seqnum = self.increment_seqnum()
+        self.acknum = self.seqnum
 
         self.timer_interrupt()
 
@@ -153,8 +151,9 @@ class EntityA:
             self.resend_packet()
 
         # case 3: packet is lost
-            # use timer to verify it isn't
-            # if it is, resend last packet but don't change seqnum
+        # use timer to verify it isn't
+        # if it is, resend last packet but don't change seqnum
+        # this case is covered under timer_interrupt()
 
     
     # Called when a packet needs to be resent
@@ -164,6 +163,14 @@ class EntityA:
         start_timer(self, 10)
         self.timer_interrupt()
 
+
+    # Called when sequence number needs to be incremented
+    # Sequence number is reset (seqnum = 0) when it's at the end of range
+    def increment_seqnum(self):
+        if (self.seqnum == self.seqnum_limit - 1):
+            return 0
+        else:
+            return self.seqnum + 1
 
     # Called when A's timer goes off (thus generating a timer interrupt).
     # This method can be used to control the retransmission of packets.
@@ -190,11 +197,13 @@ class EntityB:
     # The argument `packet` is a Pkt containing the newly arrived packet.
     def input(self, packet):
         # case 1: packet is out of order
-            # use acknum to verify it isn't
-            # if it is, resend last packet that was received
+        # use acknum to verify it isn't
+        # if it is, resend last packet that was received
+        
+
         # case 2: packet is corrupted
-            # use checksum to verify it isn't
-            # if it is, resend last packet but don't change seqnum
+        # use checksum to verify it isn't
+        # if it is, resend last packet but don't change seqnum
 
 
         # For first packet that arrives:
