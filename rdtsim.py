@@ -124,12 +124,7 @@ class EntityA:
         to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
         # start timer to check for dropped packets
-        start_timer(self, 10)
-
-        # increment sequence number
-        self.previous_seqnum = self.seqnum
-        self.seqnum = self.increment_seqnum()
-        self.acknum = self.seqnum
+        start_timer(self, 20)
 
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
@@ -138,30 +133,33 @@ class EntityA:
     def input(self, packet):
         # case 1: packet is out of order
         # use acknum to verify it isn't
-        # if it is, resend last packet but don't change seqnum
+        # if it is, resend last packet
 
         # case 2: packet is corrupted
         # use checksum to verify it isn't
-        # if it is, resend last packet but don't change seqnum
+        # if it is, resend last packet
 
         # case 3: packet is lost
         # use timer to verify it isn't
-        # if it is, resend last packet but don't change seqnum
+        # if it is, resend last packet
         # this case is covered under timer_interrupt()
-        
-        if (self.previous_seqnum != packet.acknum or 
-            packet.checksum != 2 * self.previous_seqnum + len(self.payload)):
+
+        if (self.seqnum != packet.acknum or self.checksum != packet.checksum):
+            stop_timer(self)
             self.resend_packet()
         else:
             stop_timer(self)
-            return
+
+            # increment sequence number
+            self.previous_seqnum = self.seqnum
+            self.seqnum = self.increment_seqnum()
+            self.acknum = self.seqnum
 
     
     # Called when a packet needs to be resent
     def resend_packet(self):
-        stop_timer(self)
         to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
-        start_timer(self, 10)
+        start_timer(self, 20)
 
 
     # Called when sequence number needs to be incremented
