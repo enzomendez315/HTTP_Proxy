@@ -130,8 +130,6 @@ class EntityA:
         self.seqnum = self.increment_seqnum()
         self.acknum = self.seqnum
 
-        self.timer_interrupt()
-
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
     # The argument `packet` is a Pkt containing the newly arrived packet.
@@ -162,7 +160,6 @@ class EntityA:
         stop_timer(self)
         to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
         start_timer(self, 10)
-        self.timer_interrupt()
 
 
     # Called when sequence number needs to be incremented
@@ -177,10 +174,11 @@ class EntityA:
     # Called when A's timer goes off (thus generating a timer interrupt).
     # This method can be used to control the retransmission of packets.
     def timer_interrupt(self):    
-        while (self.acknum < self.seqnum):
-            if (get_time(self) > 10):
-                self.resend_packet()
-                break
+        self.resend_packet()
+        # while (self.acknum < self.seqnum):
+        #     if (get_time(self) > 10):
+        #         self.resend_packet()
+        #         break
 
 
 class EntityB:
@@ -205,6 +203,7 @@ class EntityB:
         self.temp_seqnum = self.increment_seqnum()
         if (packet.seqnum != self.temp_seqnum and self.checksum != 0):
             to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+            return
 
         # case 2: packet is corrupted
         # use checksum to verify it isn't
@@ -212,6 +211,7 @@ class EntityB:
         self.temp_checksum = 2 * self.temp_seqnum + len(packet.payload)
         if (packet.checksum != self.temp_checksum and self.checksum != 0):
             to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+            return
 
         self.seqnum = packet.seqnum
         self.acknum = self.seqnum
