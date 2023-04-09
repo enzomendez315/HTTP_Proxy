@@ -116,15 +116,25 @@ class EntityA:
     # Called from layer 5, passed the data to be sent to other side.
     # The argument `message` is a Msg containing the data to be sent.
     def output(self, message):
+        
+        
         # save message
         self.payload = message.data
-        self.checksum = self.seqnum + self.acknum + len(self.payload)
+        self.checksum = self.seqnum + self.acknum + len(self.payload) + hash(self.payload)
 
         # send packet to entityB
         to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
         # start timer to check for dropped packets
         start_timer(self, 20)
+
+        # increment sequence number and save previous information
+        self.previous_seqnum = self.seqnum
+        self.previous_payload = self.payload
+        self.seqnum = self.increment_seqnum()
+        self.acknum = self.seqnum
+        # if (self.checksum != 0 ):
+        #     self.previous_checksum = self.checksum
 
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
@@ -144,21 +154,21 @@ class EntityA:
         # if it is, resend last packet
         # this case is covered under timer_interrupt()
 
-        if (self.seqnum != packet.acknum or self.checksum != packet.checksum):
+        if (self.previous_seqnum != packet.acknum or self.checksum != packet.checksum):
             stop_timer(self)
             self.resend_packet()
         else:
             stop_timer(self)
 
-            # increment sequence number
-            self.previous_seqnum = self.seqnum
-            self.seqnum = self.increment_seqnum()
-            self.acknum = self.seqnum
+            # # increment sequence number
+            # self.previous_seqnum = self.seqnum
+            # self.seqnum = self.increment_seqnum()
+            # self.acknum = self.seqnum
 
     
     # Called when a packet needs to be resent
     def resend_packet(self):
-        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+        to_layer3(self, Pkt(self.previous_seqnum, self.previous_seqnum, self.checksum, self.previous_payload))
         start_timer(self, 20)
 
 
@@ -204,7 +214,7 @@ class EntityB:
         # case 2: packet is corrupted
         # use checksum to verify it isn't
         # if it is, resend last packet that was received
-        self.temp_checksum = 2 * self.temp_seqnum + len(packet.payload)
+        self.temp_checksum = 2 * self.temp_seqnum + len(packet.payload) + hash(packet.payload)
         if (packet.checksum != self.temp_checksum and self.checksum != 0):
             to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
             return
