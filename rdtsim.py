@@ -127,6 +127,7 @@ class EntityA:
         start_timer(self, 10)
 
         # increment sequence number
+        self.previous_seqnum = self.seqnum
         self.seqnum = self.increment_seqnum()
         self.acknum = self.seqnum
 
@@ -138,21 +139,22 @@ class EntityA:
         # case 1: packet is out of order
         # use acknum to verify it isn't
         # if it is, resend last packet but don't change seqnum
-        if (self.seqnum == packet.acknum):
-            stop_timer(self)
-        else:
-            self.resend_packet()
-        
+
         # case 2: packet is corrupted
         # use checksum to verify it isn't
         # if it is, resend last packet but don't change seqnum
-        if (packet.checksum != self.seqnum + self.acknum + len(self.payload)):
-            self.resend_packet()
 
         # case 3: packet is lost
         # use timer to verify it isn't
         # if it is, resend last packet but don't change seqnum
         # this case is covered under timer_interrupt()
+        
+        if (self.previous_seqnum != packet.acknum or 
+            packet.checksum != 2 * self.previous_seqnum + len(self.payload)):
+            self.resend_packet()
+        else:
+            stop_timer(self)
+            return
 
     
     # Called when a packet needs to be resent
@@ -175,10 +177,6 @@ class EntityA:
     # This method can be used to control the retransmission of packets.
     def timer_interrupt(self):    
         self.resend_packet()
-        # while (self.acknum < self.seqnum):
-        #     if (get_time(self) > 10):
-        #         self.resend_packet()
-        #         break
 
 
 class EntityB:
@@ -280,7 +278,7 @@ def get_time(calling_entity):
 ## ***************** NETWORK SIMULATION CODE STARTS BELOW *********************
 ##
 ## The code below simulates the layer 3 and below network environment:
-##   - simulates the tranmission and delivery (possibly with bit-level
+##   - simulates the transmission and delivery (possibly with bit-level
 ##     corruption and packet loss) of packets across the layer 3/4 interface
 ##   - handles the starting/stopping of a timer, and generates timer
 ##     interrupts (resulting in calling student's timer handler).
