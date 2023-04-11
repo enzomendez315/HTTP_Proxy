@@ -111,30 +111,34 @@ class EntityA:
         self.acknum = 0
         self.checksum = 0
         self.payload = 0
+        self.messages = []
+        self.ready_for_next = True
 
 
     # Called from layer 5, passed the data to be sent to other side.
     # The argument `message` is a Msg containing the data to be sent.
     def output(self, message):
+        self.messages.append(message)
         
-        
+        if (self.ready_for_next is False):
+            return
+
         # save message
-        self.payload = message.data
+        self.ready_for_next = False
+        self.payload = self.messages.pop(0).data
         self.checksum = self.seqnum + self.acknum + len(self.payload) + hash(self.payload)
 
         # send packet to entityB
         to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
 
         # start timer to check for dropped packets
-        start_timer(self, 20)
+        start_timer(self, 10)
 
         # increment sequence number and save previous information
         self.previous_seqnum = self.seqnum
         self.previous_payload = self.payload
         self.seqnum = self.increment_seqnum()
         self.acknum = self.seqnum
-        # if (self.checksum != 0 ):
-        #     self.previous_checksum = self.checksum
 
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
@@ -159,17 +163,13 @@ class EntityA:
             self.resend_packet()
         else:
             stop_timer(self)
-
-            # # increment sequence number
-            # self.previous_seqnum = self.seqnum
-            # self.seqnum = self.increment_seqnum()
-            # self.acknum = self.seqnum
+            self.ready_for_next = True
 
     
     # Called when a packet needs to be resent
     def resend_packet(self):
         to_layer3(self, Pkt(self.previous_seqnum, self.previous_seqnum, self.checksum, self.previous_payload))
-        start_timer(self, 20)
+        start_timer(self, 10)
 
 
     # Called when sequence number needs to be incremented
@@ -238,11 +238,17 @@ class EntityB:
             return 0
         else:
             return self.seqnum + 1
+        
+    
+    # Called when a packet needs to be resent
+    def resend_packet(self):
+        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+        start_timer(self, 10)
 
 
     # Called when B's timer goes off.
     def timer_interrupt(self):
-        pass
+        self.resend_packet()
 
 
 ###############################################################################
