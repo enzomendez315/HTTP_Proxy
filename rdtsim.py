@@ -107,7 +107,7 @@ class EntityA:
     # all seqnums must be in the range 0-15.
     def __init__(self, seqnum_limit):
         self.seqnum_limit = seqnum_limit
-        self.seqnum = 0
+        self.base = 1
         self.acknum = 0
         self.checksum = 0
         self.payload = 0
@@ -126,19 +126,19 @@ class EntityA:
         # save message
         self.ready_for_next = False
         self.payload = self.messages.pop(0).data
-        self.checksum = self.seqnum + self.acknum + len(self.payload) + hash(self.payload)
+        self.checksum = self.base + self.acknum + len(self.payload) + hash(self.payload)
 
         # send packet to entityB
-        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+        to_layer3(self, Pkt(self.base, self.acknum, self.checksum, self.payload))
 
         # start timer to check for dropped packets
         start_timer(self, 10)
 
         # increment sequence number and save previous information
-        self.previous_seqnum = self.seqnum
+        self.previous_seqnum = self.base
         self.previous_payload = self.payload
-        self.seqnum = self.increment_seqnum()
-        self.acknum = self.seqnum
+        self.base = self.increment_seqnum()
+        self.acknum = self.base
 
 
     # Called from layer 3, when a packet arrives for layer 4 at EntityA.
@@ -175,10 +175,10 @@ class EntityA:
     # Called when sequence number needs to be incremented
     # Sequence number is reset (seqnum = 0) when it's at the end of range
     def increment_seqnum(self):
-        if (self.seqnum == self.seqnum_limit - 1):
+        if (self.base == self.seqnum_limit - 1):
             return 0
         else:
-            return self.seqnum + 1
+            return self.base + 1
 
 
     # Called when A's timer goes off (thus generating a timer interrupt).
@@ -194,7 +194,7 @@ class EntityB:
     # See comment for the meaning of seqnum_limit.
     def __init__(self, seqnum_limit):
         self.seqnum_limit = seqnum_limit
-        self.seqnum = 0
+        self.base = 1
         self.acknum = 0
         self.checksum = 0
         self.payload = 0
@@ -208,7 +208,7 @@ class EntityB:
         # if it is, resend last packet that was received
         self.temp_seqnum = self.increment_seqnum()
         if (packet.seqnum != self.temp_seqnum and self.checksum != 0):
-            to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+            to_layer3(self, Pkt(self.base, self.acknum, self.checksum, self.payload))
             return
 
         # case 2: packet is corrupted
@@ -216,11 +216,11 @@ class EntityB:
         # if it is, resend last packet that was received
         self.temp_checksum = 2 * self.temp_seqnum + len(packet.payload) + hash(packet.payload)
         if (packet.checksum != self.temp_checksum and self.checksum != 0):
-            to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+            to_layer3(self, Pkt(self.base, self.acknum, self.checksum, self.payload))
             return
 
-        self.seqnum = packet.seqnum
-        self.acknum = self.seqnum
+        self.base = packet.seqnum
+        self.acknum = self.base
         self.checksum = packet.checksum
         self.payload = packet.payload
 
@@ -228,21 +228,21 @@ class EntityB:
         to_layer5(self, Msg(self.payload))
 
         # send back new packet
-        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+        to_layer3(self, Pkt(self.base, self.acknum, self.checksum, self.payload))
 
 
     # Called when sequence number needs to be incremented
     # Sequence number is reset (seqnum = 0) when it's at the end of range
     def increment_seqnum(self):
-        if (self.seqnum == self.seqnum_limit - 1):
+        if (self.base == self.seqnum_limit - 1):
             return 0
         else:
-            return self.seqnum + 1
+            return self.base + 1
         
     
     # Called when a packet needs to be resent
     def resend_packet(self):
-        to_layer3(self, Pkt(self.seqnum, self.acknum, self.checksum, self.payload))
+        to_layer3(self, Pkt(self.base, self.acknum, self.checksum, self.payload))
         start_timer(self, 10)
 
 
