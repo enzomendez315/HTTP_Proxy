@@ -1,4 +1,4 @@
-# Place your imports here
+# Place your imports here.
 import signal
 import socket
 from socket import *
