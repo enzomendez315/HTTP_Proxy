@@ -1,6 +1,5 @@
 # Place your imports here.
 import signal
-import socket
 from socket import *
 from optparse import OptionParser
 import sys
@@ -11,22 +10,32 @@ from urllib.parse import urlparse
 # Start of program execution
 # Parse out the command line server address and port number to listen to
 parser = OptionParser()
+# Proxy listens for incoming client connections on port number -p
 parser.add_option('-p', type='int', dest='serverPort')
+# Proxy listens for incoming client connections on network interface -a
 parser.add_option('-a', type='string', dest='serverAddress')
 (options, args) = parser.parse_args()
 
-port = options.serverPort
-address = options.serverAddress
+port = options.serverPort   # -p
+address = options.serverAddress     # -a
 if address is None:
     address = 'localhost'
 if port is None:
     port = 2100
+
+# FROM ASSIGNMENT: First thing is to establish a socket that the proxy
+# can use to listen for incoming connections.
 
 # Set up listening socket for incoming connections
 listening_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
 listening_socket.bind((address, port))
 listening_socket.listen()
 listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+# FROM ASSIGNMENT: Once a client has connected, the proxy should read data
+# from the client and check for a properly formatted HTTP request.
+    # <METHOD> <URL> <HTTP VERSION>     first header
+    # <HEADER NAME>: <HEADER VALUE>     all other headers
 
 # Signal handler for pressing ctrl-c
 def ctrl_c_pressed(signal, frame):
@@ -95,6 +104,8 @@ def parse_request(request):
         Host: www.google.com
         Connection: close
         (Additional client-specified headers, if any.)
+
+    http://www.example.com:8080
     """
 
 # Receive loop from client to proxy. This gathers requests that
