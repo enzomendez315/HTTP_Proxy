@@ -44,6 +44,16 @@ def ctrl_c_pressed(signal, frame):
 # Set up signal handling (ctrl-c)
 signal.signal(signal.SIGINT, ctrl_c_pressed)
 
+# FROM ASSIGNMENT: Once the proxy has parsed the URL, it can make a connection
+# to the origin server and send the HTTP request for the appropriate object.
+    # Accept from client
+        # GET http://www.google.com/ HTTP/1.0
+    # Send to origin server
+        # GET / HTTP/1.0
+        # Host: www.google.com
+        # Connection: close
+        # (Additional client-specified headers, if any.)
+
 # Receives data from client and parses it to check that it is a valid request.
 # Sets up the server socket and sends the client request, then listens for 
 # the reply and sends it back to the client.
