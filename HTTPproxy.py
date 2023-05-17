@@ -127,8 +127,8 @@ def parse_request(request):
     # Check if there are additional headers and add them to new request.
     # Add \r\n\r\n at the end otherwise.
     if (len(lines) > 3):
-        for int in range(len(lines) - 2):
-            new_request + "\r\n" + lines[int]
+        for i in range(len(lines) - 2):
+            new_request + "\r\n" + lines[i]
 
     new_request + "\r\n\r\n"
 
