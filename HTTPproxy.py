@@ -70,7 +70,7 @@ def handle_client(client_socket, client_addr):
             break
 
     # Parse request
-    parsed_request = parse_request(request)
+    parsed_request = parse_request(request.decode('utf-8'))
 
     # Set up server socket
     server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -78,7 +78,7 @@ def handle_client(client_socket, client_addr):
 
     while True:
         # Fetch data from origin
-        server_socket.sendall(parsed_request)
+        server_socket.sendall(parsed_request.encode('utf-8'))
         reply = server_socket.recv(4096)
 
         # Send response
