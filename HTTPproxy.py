@@ -54,6 +54,8 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
         # Connection: close
         # (Additional client-specified headers, if any.)
 
+        # http://www.example.com:8080
+
 # Receives data from client and parses it to check that it is a valid request.
 # Sets up the server socket and sends the client request, then listens for 
 # the reply and sends it back to the client.
@@ -105,19 +107,6 @@ def parse_request(request):
 
     return new_request
 
-    """
-    Example, accept from client:
-        GET http://www.google.com/ HTTP/1.0
-
-    Send to origin server:
-        GET / HTTP/1.0
-        Host: www.google.com
-        Connection: close
-        (Additional client-specified headers, if any.)
-
-    http://www.example.com:8080
-    """
-
 # Receive loop from client to proxy. This gathers requests that
 # will eventually be sent to the origin server.
 while True:
@@ -125,7 +114,7 @@ while True:
     client_socket, client_addr = listening_socket.accept()
 
     # Handle each connection in a single thread.
-    #handle_client(client_socket, client_addr)
+    handle_client(client_socket, client_addr)
 
     # Handle each connection in a separate thread.
-    Thread(target=handle_client, args=(client_socket, client_addr)).start()
+    #Thread(target=handle_client, args=(client_socket, client_addr)).start()
