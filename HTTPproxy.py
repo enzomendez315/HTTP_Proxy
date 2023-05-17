@@ -109,7 +109,7 @@ def parse_request(request):
     if (method is not "GET"):
         return "501 Not Implemented"
 
-    if (request[-8:None] != "HTTP/1.0"):
+    if (version is not "HTTP/1.0"):
         return "400 Bad Request"
 
     # GET / HTTP/1.0
@@ -119,8 +119,12 @@ def parse_request(request):
     # -----------------------------------
     # http://www.example.com:8080
 
-    new_request = split_request[0] + " / " + version + "\r\nHost: " + host
+    new_request = method + " / " + version
+    + "\r\nHost: " + host
     + "\r\nConnection: close"
+
+    # Check if there are additional headers and add them to new request.
+    # Add \r\n\r\n at the end otherwise.
 
     return new_request
 
