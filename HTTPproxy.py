@@ -96,15 +96,31 @@ def handle_client(client_socket, client_addr):
 # formatted for parsing.
 # "501 Not Implemented” for valid HTTP methods other than GET.
 def parse_request(request):
-    list = request.split(" ")
-    if (list[0] != "GET"):
+    # GET http://www.google.com/ HTTP/1.0
+        # <METHOD> <URL> <HTTP VERSION>     first header
+        # <HEADER NAME>: <HEADER VALUE>     all other headers
+    # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
+    
+    split_request = request.split(" ")
+    method = split_request[0]
+    host = urlparse(split_request[1]).hostname
+    version = split_request[2]
+
+    if (method is not "GET"):
         return "501 Not Implemented"
 
-    if (list[2] != "HTTP/1.0"):
+    if (request[-8:None] != "HTTP/1.0"):
         return "400 Bad Request"
 
-    new_request = list[0] + " / " + list[2] + "\nHost: " + urlparse(list[1]).hostname
-    + "\nConnection: close"
+    # GET / HTTP/1.0
+    # Host: www.google.com
+    # Connection: close
+    # (Additional client-specified headers, if any.)
+    # -----------------------------------
+    # http://www.example.com:8080
+
+    new_request = split_request[0] + " / " + version + "\r\nHost: " + host
+    + "\r\nConnection: close"
 
     return new_request
 
