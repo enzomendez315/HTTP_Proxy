@@ -53,14 +53,14 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
         # Host: www.google.com
         # Connection: close
         # (Additional client-specified headers, if any.)
-
+        # -----------------------------------
         # http://www.example.com:8080
 
 # Receives data from client and parses it to check that it is a valid request.
 # Sets up the server socket and sends the client request, then listens for 
 # the reply and sends it back to the client.
 def handle_client(client_socket, client_addr):
-    # recv request
+    # Receive request
     request = client_socket.recv(4096)
     while True:
         temp = client_socket.recv(4096)
@@ -78,10 +78,10 @@ def handle_client(client_socket, client_addr):
     while True:
         # Fetch data from origin
         server_socket.sendall(parsed_request)
-        data = server_socket.recv(4096)
+        reply = server_socket.recv(4096)
 
         # Send response
-        client_socket.sendall(data)
+        client_socket.sendall(reply)
 
         for i in range(10):
             sleep(1)
