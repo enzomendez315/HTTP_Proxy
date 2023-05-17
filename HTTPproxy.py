@@ -36,6 +36,7 @@ listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # from the client and check for a properly formatted HTTP request.
     # <METHOD> <URL> <HTTP VERSION>     first header
     # <HEADER NAME>: <HEADER VALUE>     all other headers
+    # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
 
 # Signal handler for pressing ctrl-c
 def ctrl_c_pressed(signal, frame):
