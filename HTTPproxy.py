@@ -102,14 +102,15 @@ def parse_request(request):
     # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
     
     split_request = request.split(" ")
+    lines = request("\r\n")
     method = split_request[0]
-    host = urlparse(split_request[1]).hostname
-    version = split_request[2]
+    host = urlparse(split_request[1]).netloc
+    version = split_request[2].strip()
 
     if (method is not "GET"):
         return "501 Not Implemented"
 
-    if (version is not "HTTP/1.0"):
+    if (version is not "HTTP/1.0"): # Need to further check for malformed requests
         return "400 Bad Request"
 
     # GET / HTTP/1.0
@@ -125,6 +126,11 @@ def parse_request(request):
 
     # Check if there are additional headers and add them to new request.
     # Add \r\n\r\n at the end otherwise.
+    if (len(lines) > 3):
+        for int in range(len(lines) - 2):
+            new_request + "\r\n" + lines[int]
+
+    new_request + "\r\n\r\n"
 
     return new_request
 
