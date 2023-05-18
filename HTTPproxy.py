@@ -70,11 +70,11 @@ def handle_client(client_socket, client_addr):
             break
 
     # Parse request
-    parsed_request = parse_request(request.decode('utf-8'))
+    parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
     # Set up server socket
     server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.connect(address, port)
+    server_socket.connect(server_addr, server_port)
 
     while True:
         # Fetch data from origin
@@ -97,6 +97,7 @@ def handle_client(client_socket, client_addr):
 # "501 Not Implemented” for valid HTTP methods other than GET.
 def parse_request(request):
     # GET http://www.google.com/ HTTP/1.0
+    # GET protocol://domain/path HTTP/1.0
         # <METHOD> <URL> <HTTP VERSION>     first header
         # <HEADER NAME>: <HEADER VALUE>     all other headers
     # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
@@ -106,12 +107,14 @@ def parse_request(request):
     method = split_request[0]
     host = urlparse(split_request[1]).netloc
     version = split_request[2].strip()
+    server_addr = host
+    server_port = 80
 
     if (method is not "GET"):
-        return "501 Not Implemented"
+        return "HTTP/1.0 501 Not Implemented\r\n\r\n"
 
-    if (version is not "HTTP/1.0"): # Need to further check for malformed requests
-        return "400 Bad Request"
+    if (version is not "HTTP/1.0" or len(lines) < 3): # Need to further check for malformed requests
+        return "HTTP/1.0 400 Bad Request\r\n\r\n"
 
     # GET / HTTP/1.0
     # Host: www.google.com
@@ -132,7 +135,7 @@ def parse_request(request):
 
     new_request + "\r\n\r\n"
 
-    return new_request
+    return new_request, server_addr, server_port
 
 # Receive loop from client to proxy. This gathers requests that
 # will eventually be sent to the origin server.
