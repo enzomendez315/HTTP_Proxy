@@ -16,7 +16,7 @@ parser.add_option('-p', type='int', dest='serverPort')
 parser.add_option('-a', type='string', dest='serverAddress')
 (options, args) = parser.parse_args()
 
-port = options.serverPort   # -p
+port = options.serverPort   # -p            # Check test suite 104
 address = options.serverAddress     # -a
 if address is None:
     address = 'localhost'
