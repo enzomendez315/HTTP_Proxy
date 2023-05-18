@@ -36,7 +36,7 @@ listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # from the client and check for a properly formatted HTTP request.
     # <METHOD> <URL> <HTTP VERSION>     first header
     # <HEADER NAME>: <HEADER VALUE>     all other headers
-    # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
+    # There must always be '\r\n' between lines and '\r\n\r\n' at the end.
 
 # Signal handler for pressing ctrl-c
 def ctrl_c_pressed(signal, frame):
@@ -92,48 +92,56 @@ def handle_client(client_socket, client_addr):
 
 # Checks that the request is properly formatted.
 # Returns error messages otherwise.
-# “400 Bad Request” for malformed requests or if headers are not properly 
+# '400 Bad Request' for malformed requests or if headers are not properly 
 # formatted for parsing.
-# "501 Not Implemented” for valid HTTP methods other than GET.
+# '501 Not Implemented' for valid HTTP methods other than GET.
 def parse_request(request):
-    # GET http://www.google.com/ HTTP/1.0
+    # GET http://www.google.com:8080 HTTP/1.0
     # GET protocol://domain/path HTTP/1.0
         # <METHOD> <URL> <HTTP VERSION>     first header
         # <HEADER NAME>: <HEADER VALUE>     all other headers
-    # There must always be "\r\n" between lines and "\r\n\r\n" at the end.
+    # There must always be '\r\n' between lines and '\r\n\r\n' at the end.
     
-    split_request = request.split(" ")
-    lines = request("\r\n")
+    split_request = request.split(' ')
+    lines = request('\r\n')
     method = split_request[0]
-    host = urlparse(split_request[1]).netloc
+    host = urlparse(split_request[1]).hostname
+    path = urlparse(split_request[1]).path
     version = split_request[2].strip()
     server_addr = host
     server_port = 80
 
-    if (method is not "GET"):
-        return "HTTP/1.0 501 Not Implemented\r\n\r\n"
+    if (method is not 'GET'):
+        return 'HTTP/1.0 501 Not Implemented\r\n\r\n'
 
-    if (version is not "HTTP/1.0" or len(lines) < 3): # Need to further check for malformed requests
-        return "HTTP/1.0 400 Bad Request\r\n\r\n"
+    if (version is not 'HTTP/1.0' or len(lines) < 3): # Need to further check for malformed requests
+        return 'HTTP/1.0 400 Bad Request\r\n\r\n'
 
     # GET / HTTP/1.0
     # Host: www.google.com
     # Connection: close
     # (Additional client-specified headers, if any.)
-    # -----------------------------------
-    # http://www.example.com:8080
 
-    new_request = method + " / " + version
-    + "\r\nHost: " + host
-    + "\r\nConnection: close"
+    # Check if there is a path
+    if (not path):
+        path = ' / '
+
+    # Check if there is a specified port
+    port_index = urlparse(split_request[1]).netloc.find(':')
+    if (port_index is not -1):
+        server_port = int(server_port[port_index - len(server_port):None])
+
+    new_request = method + path + version
+    + '\r\nHost: ' + host
+    + '\r\nConnection: close'
 
     # Check if there are additional headers and add them to new request.
     # Add \r\n\r\n at the end otherwise.
     if (len(lines) > 3):
         for i in range(1, len(lines) - 2):
-            new_request + "\r\n" + lines[i]
+            new_request + '\r\n' + lines[i]
 
-    new_request + "\r\n\r\n"
+    new_request + '\r\n\r\n'
 
     return new_request, server_addr, server_port
 
