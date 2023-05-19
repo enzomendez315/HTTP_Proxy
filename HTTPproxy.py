@@ -66,7 +66,7 @@ def handle_client(client_socket, client_addr):
         request += temp
         if request.endswith(b'\r\n\r\n'):
             break
-
+    
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
@@ -75,12 +75,15 @@ def handle_client(client_socket, client_addr):
     server_socket.connect(server_addr, server_port)
 
     while True:
-        # Fetch data from origin
-        server_socket.sendall(parsed_request.encode('utf-8'))
-        reply = server_socket.recv(4096)
+        if (parsed_request != '501 Not Implemented\r\n\r\n' or parsed_request != '400 Bad Request\r\n\r\n'):
+            # Fetch data from origin
+            server_socket.sendall(parsed_request.encode('utf-8'))
+            reply = server_socket.recv(4096)
 
-        # Send response
-        client_socket.sendall(reply)
+            # Send response
+            client_socket.sendall(reply)
+        else:
+            client_socket.sendall(parsed_request.encode('utf-8'))
 
         for i in range(10):
             sleep(1)
@@ -104,16 +107,17 @@ def parse_request(request):
     lines = request.split('\r\n')
     method = split_request[0]
     host = urlparse(split_request[1]).hostname
+    netloc = urlparse(split_request[1]).netloc
     path = urlparse(split_request[1]).path
     version = split_request[2].strip()
     server_addr = host
     server_port = 80
 
     if (method != 'GET'):
-        return 'HTTP/1.0 501 Not Implemented\r\n\r\n'
+        return '501 Not Implemented\r\n\r\n', server_addr, server_port
 
-    if (version != 'HTTP/1.0' or len(lines) < 3): # Need to further check for malformed requests
-        return 'HTTP/1.0 400 Bad Request\r\n\r\n'
+    if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''): # Need to further check for malformed requests
+        return '400 Bad Request\r\n\r\n', server_addr, server_port
 
     # GET / HTTP/1.0
     # Host: www.google.com
@@ -127,7 +131,7 @@ def parse_request(request):
     # Check if there is a specified port
     port_index = urlparse(split_request[1]).netloc.find(':')
     if (port_index != -1):
-        server_port = int(server_port[port_index - len(server_port):None])
+        server_port = int(netloc[port_index - len(netloc):None])
 
     new_request = method + path + version
     + '\r\nHost: ' + host
@@ -150,7 +154,7 @@ while True:
     client_socket, client_addr = listening_socket.accept()
 
     # Handle each connection in a single thread.
-    handle_client(client_socket, client_addr)
+    #handle_client(client_socket, client_addr)
 
     # Handle each connection in a separate thread.
-    #Thread(target=handle_client, args=(client_socket, client_addr)).start()
+    Thread(target=handle_client, args=(client_socket, client_addr)).start()
