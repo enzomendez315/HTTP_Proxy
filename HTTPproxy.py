@@ -16,7 +16,7 @@ parser.add_option('-p', type='int', dest='serverPort')
 parser.add_option('-a', type='string', dest='serverAddress')
 (options, args) = parser.parse_args()
 
-port = options.serverPort   # -p            # Check test suite 104
+port = options.serverPort   # -p
 address = options.serverAddress     # -a
 if address is None:
     address = 'localhost'
@@ -27,10 +27,10 @@ if port is None:
 # can use to listen for incoming connections.
 
 # Set up listening socket for incoming connections
-listening_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
+listening_socket = socket(AF_INET, SOCK_STREAM)
 listening_socket.bind((address, port))
 listening_socket.listen()
-listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 # FROM ASSIGNMENT: Once a client has connected, the proxy should read data
 # from the client and check for a properly formatted HTTP request.
@@ -54,8 +54,6 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
         # Host: www.google.com
         # Connection: close
         # (Additional client-specified headers, if any.)
-        # -----------------------------------
-        # http://www.example.com:8080
 
 # Receives data from client and parses it to check that it is a valid request.
 # Sets up the server socket and sends the client request, then listens for 
@@ -103,7 +101,7 @@ def parse_request(request):
     # There must always be '\r\n' between lines and '\r\n\r\n' at the end.
     
     split_request = request.split(' ')
-    lines = request('\r\n')
+    lines = request.split('\r\n')
     method = split_request[0]
     host = urlparse(split_request[1]).hostname
     path = urlparse(split_request[1]).path
@@ -111,10 +109,10 @@ def parse_request(request):
     server_addr = host
     server_port = 80
 
-    if (method is not 'GET'):
+    if (method != 'GET'):
         return 'HTTP/1.0 501 Not Implemented\r\n\r\n'
 
-    if (version is not 'HTTP/1.0' or len(lines) < 3): # Need to further check for malformed requests
+    if (version != 'HTTP/1.0' or len(lines) < 3): # Need to further check for malformed requests
         return 'HTTP/1.0 400 Bad Request\r\n\r\n'
 
     # GET / HTTP/1.0
@@ -128,7 +126,7 @@ def parse_request(request):
 
     # Check if there is a specified port
     port_index = urlparse(split_request[1]).netloc.find(':')
-    if (port_index is not -1):
+    if (port_index != -1):
         server_port = int(server_port[port_index - len(server_port):None])
 
     new_request = method + path + version
