@@ -106,6 +106,7 @@ def parse_request(request):
     split_request = request.split(' ')
     lines = request.split('\r\n')
     method = split_request[0]
+    protocol = urlparse(split_request[1]).scheme
     host = urlparse(split_request[1]).hostname
     netloc = urlparse(split_request[1]).netloc
     path = urlparse(split_request[1]).path
@@ -113,10 +114,12 @@ def parse_request(request):
     server_addr = host
     server_port = 80
 
-    if (method != 'GET'):
+    if (method == 'HEAD' or method == 'POST'):
         return '501 Not Implemented\r\n\r\n', server_addr, server_port
 
-    if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''): # Need to further check for malformed requests
+    if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''
+        or protocol != 'http' or method != 'GET' or (len(lines) > 3 and 
+        lines[len(lines-1)] != '' and lines[len(lines-2)] != '')):
         return '400 Bad Request\r\n\r\n', server_addr, server_port
 
     # GET / HTTP/1.0
@@ -125,22 +128,29 @@ def parse_request(request):
     # (Additional client-specified headers, if any.)
 
     # Check if there is a path
-    if (not path):
+    if (path == ''):
         path = ' / '
 
-    # Check if there is a specified port
-    port_index = urlparse(split_request[1]).netloc.find(':')
-    if (port_index != -1):
-        server_port = int(netloc[port_index - len(netloc):None])
+    # # Check if there is a specified port
+    # port_index = urlparse(split_request[1]).netloc.find(':')
+    # if (port_index != -1):
+    #     server_port = int(netloc[port_index - len(netloc) + 1:None])
 
-    new_request = (method + path + version + 
+    # Check if there is a specified port
+    if (urlparse(split_request[1]).port != None):
+        server_port = urlparse(split_request[1]).port
+
+    new_request = (method + ' ' + path + ' ' + version + 
                    '\r\nHost: ' + host + 
                    '\r\nConnection: close')
 
     # Check if there are additional headers and add them to new request.
+    # The last two indeces of the array will be ''
     # Add \r\n\r\n at the end otherwise.
     if (len(lines) > 3):
         for i in range(1, len(lines) - 2):
+            if ('Connection: close' in lines[i]):
+                continue
             new_request + '\r\n' + lines[i]
 
     new_request + '\r\n\r\n'
