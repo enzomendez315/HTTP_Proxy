@@ -71,8 +71,8 @@ def handle_client(client_socket, client_addr):
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
     # Set up server socket
-    server_socket = socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.connect(server_addr, server_port)
+    server_socket = socket(AF_INET, SOCK_STREAM)
+    server_socket.connect((server_addr, server_port))
 
     while True:
         if (parsed_request != '501 Not Implemented\r\n\r\n' or parsed_request != '400 Bad Request\r\n\r\n'):
@@ -133,9 +133,9 @@ def parse_request(request):
     if (port_index != -1):
         server_port = int(netloc[port_index - len(netloc):None])
 
-    new_request = method + path + version
-    + '\r\nHost: ' + host
-    + '\r\nConnection: close'
+    new_request = (method + path + version + 
+                   '\r\nHost: ' + host + 
+                   '\r\nConnection: close')
 
     # Check if there are additional headers and add them to new request.
     # Add \r\n\r\n at the end otherwise.
