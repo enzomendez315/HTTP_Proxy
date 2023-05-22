@@ -62,8 +62,7 @@ def handle_client(client_socket, client_addr):
     # Receive request
     request = client_socket.recv(4096)
     while True:
-        temp_client = client_socket.recv(4096)
-        request += temp_client
+        request += client_socket.recv(4096)
         if request.endswith(b'\r\n\r\n'):
             break
     
@@ -80,9 +79,9 @@ def handle_client(client_socket, client_addr):
             server_socket.sendall(parsed_request.encode('utf-8'))
             reply = server_socket.recv(4096)
             while True:
-                temp_server = server_socket.recv(4096)
-                reply += temp_server
+                reply += server_socket.recv(4096)
                 if reply.endswith(b'\r\n\r\n'):
+                    server_socket.close()
                     break
 
             # Send response
@@ -151,9 +150,9 @@ def parse_request(request):
         for i in range(1, len(lines) - 2):
             if ('Connection: ' in lines[i]):
                 continue
-            new_request + '\r\n' + lines[i]
+            new_request += '\r\n' + lines[i]
 
-    new_request + '\r\n\r\n'
+    new_request += '\r\n\r\n'
 
     # DELETE LATER!!
     print('-----------------------------------\r\n' + 
