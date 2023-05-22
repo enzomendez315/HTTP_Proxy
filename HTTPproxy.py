@@ -62,8 +62,8 @@ def handle_client(client_socket, client_addr):
     # Receive request
     request = client_socket.recv(4096)
     while True:
-        temp = client_socket.recv(4096)
-        request += temp
+        temp_client = client_socket.recv(4096)
+        request += temp_client
         if request.endswith(b'\r\n\r\n'):
             break
     
@@ -79,6 +79,11 @@ def handle_client(client_socket, client_addr):
             # Fetch data from origin
             server_socket.sendall(parsed_request.encode('utf-8'))
             reply = server_socket.recv(4096)
+            while True:
+                temp_server = server_socket.recv(4096)
+                reply += temp_server
+                if reply.endswith(b'\r\n\r\n'):
+                    break
 
             # Send response
             client_socket.sendall(reply)
@@ -98,7 +103,7 @@ def handle_client(client_socket, client_addr):
 # '501 Not Implemented' for valid HTTP methods other than GET.
 def parse_request(request):
     # GET http://www.google.com:8080 HTTP/1.0
-    # GET protocol://domain/path HTTP/1.0
+    # GET protocol://domain:port/path HTTP/1.0
         # <METHOD> <URL> <HTTP VERSION>     first header
         # <HEADER NAME>: <HEADER VALUE>     all other headers
     # There must always be '\r\n' between lines and '\r\n\r\n' at the end.
@@ -129,12 +134,7 @@ def parse_request(request):
 
     # Check if there is a path
     if (path == ''):
-        path = ' / '
-
-    # # Check if there is a specified port
-    # port_index = urlparse(split_request[1]).netloc.find(':')
-    # if (port_index != -1):
-    #     server_port = int(netloc[port_index - len(netloc) + 1:None])
+        path = '/'
 
     # Check if there is a specified port
     if (urlparse(split_request[1]).port != None):
@@ -149,11 +149,26 @@ def parse_request(request):
     # Add \r\n\r\n at the end otherwise.
     if (len(lines) > 3):
         for i in range(1, len(lines) - 2):
-            if ('Connection: close' in lines[i]):
+            if ('Connection: ' in lines[i]):
                 continue
             new_request + '\r\n' + lines[i]
 
     new_request + '\r\n\r\n'
+
+    # DELETE LATER!!
+    print('-----------------------------------\r\n' + 
+          'This is the parsed request:\r\n' + 
+          new_request + '\r\n' +
+          '-----------------------------------')
+    print('')
+    print('-----------------------------------\r\n' + 
+          'Method: ' + method + '\r\n' +
+          'Path: ' + path + '\r\n' +
+          'Version: ' + version + '\r\n' +
+          'Host: ' + host + '\r\n' +
+          'Server addr: ' + server_addr + '\r\n' +
+          'Server port: ' + str(server_port) + '\r\n' +
+          '-----------------------------------')
 
     return new_request, server_addr, server_port
 
