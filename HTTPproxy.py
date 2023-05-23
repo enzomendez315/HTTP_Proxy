@@ -59,8 +59,8 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 # Sets up the server socket and sends the client request, then listens for 
 # the reply and sends it back to the client.
 def handle_client(client_socket, client_addr):
-    # Receive request
-    request = client_socket.recv(4096)
+    # Receive request from client
+    request = b''
     while True:
         request += client_socket.recv(4096)
         if request.endswith(b'\r\n\r\n'):
@@ -76,13 +76,22 @@ def handle_client(client_socket, client_addr):
     while True:
         if (parsed_request != '501 Not Implemented\r\n\r\n' or parsed_request != '400 Bad Request\r\n\r\n'):
             # Fetch data from origin
+            # server_socket.sendall(parsed_request.encode('utf-8'))
+            # reply = server_socket.recv(4096)
+            # while True:
+            #     reply += server_socket.recv(4096)
+            #     if reply.endswith(b'\r\n\r\n'):
+            #         server_socket.close()
+            #         break
+            
+            # Fetch data from server
+            reply = b''
             server_socket.sendall(parsed_request.encode('utf-8'))
-            reply = server_socket.recv(4096)
             while True:
-                reply += server_socket.recv(4096)
-                if reply.endswith(b'\r\n\r\n'):
-                    server_socket.close()
+                temp = server_socket.recv(4096)
+                if temp == b'':
                     break
+                request += temp
 
             # Send response
             client_socket.sendall(reply)
