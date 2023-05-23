@@ -85,7 +85,13 @@ def handle_client(client_socket, client_addr):
         temp = server_socket.recv(4096)
         if temp == b'':
             break
-        request += temp
+        reply += temp   # request += temp?
+
+    # DELETE LATER!!
+    print('-----------------------------------\r\n' + 
+          'This is the reply sent back:\r\n' + 
+          reply.decode('utf-8') + '\r\n' +
+          '-----------------------------------')
 
     # Send response
     client_socket.sendall(reply)
@@ -115,14 +121,23 @@ def parse_request(request):
     version = split_request[2].strip()
     server_addr = host
     server_port = 80
+    bad_headers = False
+
+    # Check if the other headers are in the right format.
+    # The last two indeces of the array will be ''
+    if (len(lines) > 3):
+        for i in range(1, len(lines) - 2):
+            index = lines[i].find(': ')
+            if (index == -1):
+                bad_headers = True
 
     if (method == 'HEAD' or method == 'POST'):
-        return '501 Not Implemented\r\n\r\n', server_addr, server_port
+        return 'HTTP/1.0 501 Not Implemented\r\n\r\n', server_addr, server_port
 
     if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''
         or protocol != 'http' or method != 'GET' or (len(lines) > 3 and 
-        lines[len(lines-1)] != '' and lines[len(lines-2)] != '')):
-        return '400 Bad Request\r\n\r\n', server_addr, server_port
+        lines[len(lines-1)] != '' and lines[len(lines-2)] != '') or bad_headers):
+        return 'HTTP/1.0 400 Bad Request\r\n\r\n', server_addr, server_port
 
     # GET / HTTP/1.0
     # Host: www.google.com
@@ -143,7 +158,7 @@ def parse_request(request):
 
     # Check if there are additional headers and add them to new request.
     # The last two indeces of the array will be ''
-    # Add \r\n\r\n at the end otherwise.
+    # Add \r\n\r\n at the end and \r\n after every header.
     if (len(lines) > 3):
         for i in range(1, len(lines) - 2):
             if ('Connection: ' in lines[i]):
