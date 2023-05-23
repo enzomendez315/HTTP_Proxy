@@ -65,6 +65,12 @@ def handle_client(client_socket, client_addr):
         request += client_socket.recv(4096)
         if request.endswith(b'\r\n\r\n'):
             break
+
+    # DELETE LATER!!
+    print('-----------------------------------\r\n' + 
+          'THIS IS THE ORIGINAL REQUEST:\r\n' + 
+          request.decode('utf-8') + '\r\n' +
+          '-----------------------------------')
     
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
@@ -83,13 +89,14 @@ def handle_client(client_socket, client_addr):
     server_socket.sendall(parsed_request.encode('utf-8'))
     while True:
         temp = server_socket.recv(4096)
-        if temp == b'':
+        if (temp == b''):
             break
         reply += temp   # request += temp?
+    reply += b'\r\n\r\n'
 
     # DELETE LATER!!
     print('-----------------------------------\r\n' + 
-          'This is the reply sent back:\r\n' + 
+          'THIS IS THE REPLY SENT BACK:\r\n' + 
           reply.decode('utf-8') + '\r\n' +
           '-----------------------------------')
 
@@ -118,7 +125,8 @@ def parse_request(request):
     host = urlparse(split_request[1]).hostname
     netloc = urlparse(split_request[1]).netloc
     path = urlparse(split_request[1]).path
-    version = split_request[2].strip()
+    if (len(split_request) > 2):
+        version = split_request[2].strip()
     server_addr = host
     server_port = 80
     bad_headers = False
@@ -136,7 +144,8 @@ def parse_request(request):
 
     if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''
         or protocol != 'http' or method != 'GET' or (len(lines) > 3 and 
-        lines[len(lines-1)] != '' and lines[len(lines-2)] != '') or bad_headers):
+        lines[len(lines-1)] != '' and lines[len(lines-2)] != '') or bad_headers
+        or len(split_request) < 3):
         return 'HTTP/1.0 400 Bad Request\r\n\r\n', server_addr, server_port
 
     # GET / HTTP/1.0
@@ -169,11 +178,12 @@ def parse_request(request):
 
     # DELETE LATER!!
     print('-----------------------------------\r\n' + 
-          'This is the parsed request:\r\n' + 
+          'THIS IS THE PARSED REQUEST:\r\n' + 
           new_request + '\r\n' +
           '-----------------------------------')
     print('')
-    print('-----------------------------------\r\n' + 
+    print('-----------------------------------\r\n' +
+          'THESE ARE THE ATTRIBUTES:\r\n' +  
           'Method: ' + method + '\r\n' +
           'Path: ' + path + '\r\n' +
           'Version: ' + version + '\r\n' +
