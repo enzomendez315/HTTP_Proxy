@@ -69,40 +69,29 @@ def handle_client(client_socket, client_addr):
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
+    if ('501 Not Implemented\r\n\r\n' in parsed_request or '400 Bad Request\r\n\r\n' in parsed_request):
+        client_socket.sendall(parsed_request.encode('utf-8'))
+        client_socket.close()
+        return
+
     # Set up server socket
     server_socket = socket(AF_INET, SOCK_STREAM)
-    server_socket.connect((server_addr, server_port))
+    server_socket.connect((gethostbyname(server_addr), server_port))
 
+    # Fetch data from server
+    reply = b''
+    server_socket.sendall(parsed_request.encode('utf-8'))
     while True:
-        if (parsed_request != '501 Not Implemented\r\n\r\n' or parsed_request != '400 Bad Request\r\n\r\n'):
-            # Fetch data from origin
-            # server_socket.sendall(parsed_request.encode('utf-8'))
-            # reply = server_socket.recv(4096)
-            # while True:
-            #     reply += server_socket.recv(4096)
-            #     if reply.endswith(b'\r\n\r\n'):
-            #         server_socket.close()
-            #         break
-            
-            # Fetch data from server
-            reply = b''
-            server_socket.sendall(parsed_request.encode('utf-8'))
-            while True:
-                temp = server_socket.recv(4096)
-                if temp == b'':
-                    break
-                request += temp
+        temp = server_socket.recv(4096)
+        if temp == b'':
+            break
+        request += temp
 
-            # Send response
-            client_socket.sendall(reply)
-        else:
-            client_socket.sendall(parsed_request.encode('utf-8'))
+    # Send response
+    client_socket.sendall(reply)
 
-        for i in range(10):
-            sleep(1)
-            print(f'Handling request from client {client_addr}')
-        print('Client request handled')
-        client_socket.close()
+    server_socket.close()
+    client_socket.close()
 
 # Checks that the request is properly formatted.
 # Returns error messages otherwise.
