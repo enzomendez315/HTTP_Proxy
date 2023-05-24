@@ -59,6 +59,11 @@ signal.signal(signal.SIGINT, ctrl_c_pressed)
 # Sets up the server socket and sends the client request, then listens for 
 # the reply and sends it back to the client.
 def handle_client(client_socket, client_addr):
+    cache = {}
+    blocklist = {}
+    cached_enabled = False
+    blocklist_enabled = False
+    
     # Receive request from client
     request = b''
     while True:
@@ -72,6 +77,18 @@ def handle_client(client_socket, client_addr):
           request.decode('utf-8') + '\r\n' +
           '-----------------------------------')
     
+    if ('cache/enable' in request.decode('utf-8')):
+        cached_enabled = True
+
+    if ('cache/disable' in request.decode('utf-8')):
+        cached_enabled = False
+
+    if ('blocklist/enable' in request.decode('utf-8')):
+        blocklist_enabled = True
+
+    if ('blocklist/disable' in request.decode('utf-8')):
+        blocklist_enabled = False
+    
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
@@ -84,27 +101,70 @@ def handle_client(client_socket, client_addr):
     server_socket = socket(AF_INET, SOCK_STREAM)
     server_socket.connect((gethostbyname(server_addr), server_port))
 
-    # Fetch data from server
-    reply = b''
-    server_socket.sendall(parsed_request.encode('utf-8'))
-    while True:
-        temp = server_socket.recv(4096)
-        if (temp == b''):
-            break
-        reply += temp   # request += temp?
-    reply += b'\r\n\r\n'
+    if (cached_enabled):
+        # Check if the object is in the cache
+        if (parsed_request in cache):
+            # Verify it's up to date.
+            parsed_request += (parsed_request[0:len(parsed_request-4)] +
+                               'If-Modified-Since: ' + cache[parsed_request][1]
+                               + '\r\n\r\n')
+            reply = b''
+            server_socket.sendall(parsed_request.encode('utf-8'))
+            while True:
+                temp = server_socket.recv(4096)
+                if (temp == b''):
+                    break
+                reply += temp   # request += temp?
+            reply += b'\r\n\r\n'
 
-    # DELETE LATER!!
-    print('-----------------------------------\r\n' + 
-          'THIS IS THE REPLY SENT BACK:\r\n' + 
-          reply.decode('utf-8') + '\r\n' +
-          '-----------------------------------')
+            # Cache has the most recent version of object
+            if (b'304 Not Modified' in reply):
+                client_socket.sendall(cache[parsed_request][0])
 
-    # Send response
-    client_socket.sendall(reply)
+            # Server's reply contains the most recent version
+            else:
+                if (b'200 OK' in reply):
+                    cache[parsed_request] = (reply, None)   # ADD DATE FOR LAST MODIFIED!!
+                client_socket.sendall(reply)
 
-    server_socket.close()
-    client_socket.close()
+        # Object is not in cache
+        else:
+            reply = b''
+            server_socket.sendall(parsed_request.encode('utf-8'))
+            while True:
+                temp = server_socket.recv(4096)
+                if (temp == b''):
+                    break
+                reply += temp   # request += temp?
+            reply += b'\r\n\r\n'
+
+            if (b'200 OK' in reply):
+                cache[parsed_request] = (reply, None)   # ADD DATE FOR LAST MODIFIED!!
+            client_socket.sendall(reply)
+    
+    # Cache is disabled
+    else:
+        # Fetch data from server
+        reply = b''
+        server_socket.sendall(parsed_request.encode('utf-8'))
+        while True:
+            temp = server_socket.recv(4096)
+            if (temp == b''):
+                break
+            reply += temp   # request += temp?
+        reply += b'\r\n\r\n'
+
+        # DELETE LATER!!
+        print('-----------------------------------\r\n' + 
+            'THIS IS THE REPLY SENT BACK:\r\n' + 
+            reply.decode('utf-8') + '\r\n' +
+            '-----------------------------------')
+
+        # Send response
+        client_socket.sendall(reply)
+
+        #server_socket.close()
+        #client_socket.close()
 
 # Checks that the request is properly formatted.
 # Returns error messages otherwise.
@@ -193,6 +253,41 @@ def parse_request(request):
           '-----------------------------------')
 
     return new_request, server_addr, server_port
+
+# Checks if cache and blocklist should be enabled/disabled.
+def cache_flag(request):
+    if ('cache/enable' in request.decode('utf-8')):
+        cache = True
+
+    if ('cache/disable' in request.decode('utf-8')):
+        cache = False
+
+    if ('blocklist/enable' in request.decode('utf-8')):
+        blocklist = True
+
+    if ('blocklist/disable' in request.decode('utf-8')):
+        blocklist = False
+
+    return cache, blocklist
+
+# Checks if proxy is already stored an object. If so, it verifies
+# that the cached copy is up to date. If necessary, the proxy
+# updates its cache with the most recent version.
+def cache(request):
+    # Check if the object is in the cache
+        # If it isn't, request it from server (using a GET request)
+        # and cache it. Only objects with "200 OK" responses should
+        # be cached.
+
+        # If it is, verify that it's up to date with a "conditional
+        # GET" to the server.
+            # If the object has not been modified since it was cached,
+            # send the cached version to client.
+
+            # Otherwise, the server's response will contain an updated
+            # version of the object.
+    
+    pass
 
 # Receive loop from client to proxy. This gathers requests that
 # will eventually be sent to the origin server.
