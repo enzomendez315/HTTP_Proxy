@@ -77,24 +77,42 @@ def handle_client(client_socket, client_addr):
           request.decode('utf-8') + '\r\n' +
           '-----------------------------------')
     
-    if ('cache/enable' in request.decode('utf-8')):
+    if (b'cache/enable' in request):
         cached_enabled = True
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
 
-    if ('cache/disable' in request.decode('utf-8')):
+    if (b'cache/disable' in request):
         cached_enabled = False
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
+    
+    if (b'cache/flush' in request):
+        cache.clear()
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
 
-    if ('blocklist/enable' in request.decode('utf-8')):
+    if (b'blocklist/enable' in request):
         blocklist_enabled = True
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
 
-    if ('blocklist/disable' in request.decode('utf-8')):
+    if (b'blocklist/disable' in request):
         blocklist_enabled = False
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
+    
+    if (b'blocklist/flush' in request):
+        blocklist.clear()
+        client_socket.sendall('HTTP/1.0 200 OK')
+        return
     
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
     if ('501 Not Implemented\r\n\r\n' in parsed_request or '400 Bad Request\r\n\r\n' in parsed_request):
         client_socket.sendall(parsed_request.encode('utf-8'))
-        client_socket.close()
+        #client_socket.close()
         return
 
     # Set up server socket
@@ -253,22 +271,6 @@ def parse_request(request):
           '-----------------------------------')
 
     return new_request, server_addr, server_port
-
-# Checks if cache and blocklist should be enabled/disabled.
-def cache_flag(request):
-    if ('cache/enable' in request.decode('utf-8')):
-        cache = True
-
-    if ('cache/disable' in request.decode('utf-8')):
-        cache = False
-
-    if ('blocklist/enable' in request.decode('utf-8')):
-        blocklist = True
-
-    if ('blocklist/disable' in request.decode('utf-8')):
-        blocklist = False
-
-    return cache, blocklist
 
 # Checks if proxy is already stored an object. If so, it verifies
 # that the cached copy is up to date. If necessary, the proxy
