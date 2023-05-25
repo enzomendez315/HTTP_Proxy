@@ -79,40 +79,63 @@ def handle_client(client_socket, client_addr):
     
     if (b'cache/enable' in request):
         cached_enabled = True
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
 
     if (b'cache/disable' in request):
         cached_enabled = False
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
     
     if (b'cache/flush' in request):
         cache.clear()
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
 
     if (b'blocklist/enable' in request):
         blocklist_enabled = True
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
 
     if (b'blocklist/disable' in request):
         blocklist_enabled = False
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
     
     if (b'blocklist/flush' in request):
         blocklist.clear()
-        client_socket.sendall('HTTP/1.0 200 OK')
+        client_socket.sendall(b'HTTP/1.0 200 OK')
+        return
+    
+    if (b'blocklist/add/' in request):
+        start = request.decode('utf-8').find('add/') + 4
+        end = request.decode('utf-8').find(' HTTP/1.0')
+        substring = request.decode('utf-8')[start:end]
+        blocklist.add(substring)
+        client_socket.sendall(b'HTTP/1.0 200 OK')
+        return
+    
+    if (b'blocklist/remove/' in request):
+        start = request.decode('utf-8').find('remove/') + 7
+        end = request.decode('utf-8').find(' HTTP/1.0')
+        substring = request.decode('utf-8')[start:end]
+        blocklist.remove(substring)
+        client_socket.sendall(b'HTTP/1.0 200 OK')
         return
     
     # Parse request
     parsed_request, server_addr, server_port = parse_request(request.decode('utf-8'))
 
+    if (blocklist_enabled):
+        for domain in blocklist:
+            if domain in parsed_request:
+                client_socket.sendall(b'HTTP/1.0 403 Forbidden\r\n\r\n')
+                client_socket.close()
+                return
+
     if ('501 Not Implemented\r\n\r\n' in parsed_request or '400 Bad Request\r\n\r\n' in parsed_request):
         client_socket.sendall(parsed_request.encode('utf-8'))
-        #client_socket.close()
+        client_socket.close()
         return
 
     # Set up server socket
@@ -123,7 +146,7 @@ def handle_client(client_socket, client_addr):
         # Check if the object is in the cache
         if (parsed_request in cache):
             # Verify it's up to date.
-            parsed_request += (parsed_request[0:len(parsed_request-4)] +
+            parsed_request += (parsed_request[0:len(parsed_request) - 4] +
                                'If-Modified-Since: ' + cache[parsed_request][1]
                                + '\r\n\r\n')
             reply = b''
@@ -133,7 +156,10 @@ def handle_client(client_socket, client_addr):
                 if (temp == b''):
                     break
                 reply += temp   # request += temp?
-            reply += b'\r\n\r\n'
+            string_reply = reply.decode('utf-8')
+            string_reply = string_reply[string_reply.find('<'):None]
+            string_reply += '\r\n\r\n'
+            reply = string_reply.encode('utf-8')
 
             # Cache has the most recent version of object
             if (b'304 Not Modified' in reply):
@@ -154,7 +180,10 @@ def handle_client(client_socket, client_addr):
                 if (temp == b''):
                     break
                 reply += temp   # request += temp?
-            reply += b'\r\n\r\n'
+            string_reply = reply.decode('utf-8')
+            string_reply = string_reply[string_reply.find('<'):None]
+            string_reply += '\r\n\r\n'
+            reply = string_reply.encode('utf-8')
 
             if (b'200 OK' in reply):
                 cache[parsed_request] = (reply, None)   # ADD DATE FOR LAST MODIFIED!!
@@ -170,7 +199,10 @@ def handle_client(client_socket, client_addr):
             if (temp == b''):
                 break
             reply += temp   # request += temp?
-        reply += b'\r\n\r\n'
+        string_reply = reply.decode('utf-8')
+        string_reply = string_reply[string_reply.find('<'):None]
+        string_reply += '\r\n\r\n'
+        reply = string_reply.encode('utf-8')
 
         # DELETE LATER!!
         print('-----------------------------------\r\n' + 
@@ -181,8 +213,8 @@ def handle_client(client_socket, client_addr):
         # Send response
         client_socket.sendall(reply)
 
-        #server_socket.close()
-        #client_socket.close()
+        server_socket.close()
+        client_socket.close()
 
 # Checks that the request is properly formatted.
 # Returns error messages otherwise.
@@ -220,20 +252,16 @@ def parse_request(request):
     if (method == 'HEAD' or method == 'POST'):
         return 'HTTP/1.0 501 Not Implemented\r\n\r\n', server_addr, server_port
 
-    if (version != 'HTTP/1.0' or len(lines) < 3 or host == None or netloc == ''
+    if (len(split_request) < 3 or len(lines) < 3 or host == None or netloc == ''
         or protocol != 'http' or method != 'GET' or (len(lines) > 3 and 
-        lines[len(lines-1)] != '' and lines[len(lines-2)] != '') or bad_headers
-        or len(split_request) < 3):
+        lines[len(lines) - 1] != '' and lines[len(lines) - 2] != '') or bad_headers
+        or version != 'HTTP/1.0' or path == ''):
         return 'HTTP/1.0 400 Bad Request\r\n\r\n', server_addr, server_port
 
     # GET / HTTP/1.0
     # Host: www.google.com
     # Connection: close
     # (Additional client-specified headers, if any.)
-
-    # Check if there is a path
-    if (path == ''):
-        path = '/'
 
     # Check if there is a specified port
     if (urlparse(split_request[1]).port != None):
