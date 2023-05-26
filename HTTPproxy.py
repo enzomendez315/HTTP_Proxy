@@ -157,7 +157,8 @@ def handle_client(client_socket, client_addr):
                     break
                 reply += temp   # request += temp?
             string_reply = reply.decode('utf-8')
-            string_reply = string_reply[string_reply.find('<'):None]
+            #string_reply = string_reply[string_reply.find('<'):None]
+            string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
             string_reply += '\r\n\r\n'
             reply = string_reply.encode('utf-8')
 
@@ -168,7 +169,10 @@ def handle_client(client_socket, client_addr):
             # Server's reply contains the most recent version
             else:
                 if (b'200 OK' in reply):
-                    cache[parsed_request] = (reply, None)   # ADD DATE FOR LAST MODIFIED!!
+                    start = string_reply.find('Date: ')
+                    end = string_reply.find('\r\n', start)
+                    date = string_reply[start + 6:end]
+                    cache[parsed_request] = (reply, date)
                 client_socket.sendall(reply)
 
         # Object is not in cache
@@ -181,12 +185,16 @@ def handle_client(client_socket, client_addr):
                     break
                 reply += temp   # request += temp?
             string_reply = reply.decode('utf-8')
-            string_reply = string_reply[string_reply.find('<'):None]
+            #string_reply = string_reply[string_reply.find('<'):None]
+            string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
             string_reply += '\r\n\r\n'
             reply = string_reply.encode('utf-8')
 
             if (b'200 OK' in reply):
-                cache[parsed_request] = (reply, None)   # ADD DATE FOR LAST MODIFIED!!
+                start = string_reply.find('Date: ')
+                end = string_reply.find('\r\n', start)
+                date = string_reply[start + 6:end]
+                cache[parsed_request] = (reply, date)
             client_socket.sendall(reply)
     
     # Cache is disabled
@@ -200,7 +208,8 @@ def handle_client(client_socket, client_addr):
                 break
             reply += temp   # request += temp?
         string_reply = reply.decode('utf-8')
-        string_reply = string_reply[string_reply.find('<'):None]
+        #string_reply = string_reply[string_reply.find('<'):None]
+        string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
         string_reply += '\r\n\r\n'
         reply = string_reply.encode('utf-8')
 
