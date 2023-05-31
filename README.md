@@ -70,26 +70,26 @@ The proxy's blocklist can also be enabled or disabled. When it is enabled, if a 
 The blocklist is simply a list of strings to check against the host portion of the URI in the client’s request. If any string in the blocklist is a substring of the host portion of the URI, the client’s request is blocked.
 
 The initial state of both the cache and the blocklist is disabled. These are the following commands that will alter the state of these two objects:
-`/proxy/cache/enable`
+`/proxy/cache/enable`  
 Enables the proxy’s cache; if it is already enabled, it does nothing. This request does not affect the contents of the cache. Future requests will consult the cache.
 
-`/proxy/cache/disable`
+`/proxy/cache/disable`  
 Disables the proxy’s cache; if it is already disabled, it does nothing. This request does not affect the contents of the cache. Future requests will not consult the cache.
 
-`/proxy/cache/flush`
+`/proxy/cache/flush`  
 Flushes (empties) the proxy’s cache. This request does not affect the enabled/disabled state of the cache.
 
-`/proxy/blocklist/enable`
+`/proxy/blocklist/enable`  
 Enables the proxy’s blocklist; if it is already enabled, it does nothing. This request does not affect the contents of the blocklist. Future requests will consult the blocklist.
 
-`/proxy/blocklist/disable`
+`/proxy/blocklist/disable`  
 Disables the proxy’s blocklist; if it is already disabled, it does nothing. This request does not affect the contents of the blocklist. Future requests will not consult the blocklist.
 
-`/proxy/blocklist/add/<string>`
+`/proxy/blocklist/add/<string>`  
 Adds the specified string to the proxy’s blocklist; if it is already in the blocklist, it does nothing.
 
-`/proxy/blocklist/remove/<string>`
+`/proxy/blocklist/remove/<string>`  
 Removes the specified string from the proxy’s blocklist; if it is not already in the blocklist, it does nothing.
 
-`/proxy/blocklist/flush`
+`/proxy/blocklist/flush`  
 Flushes (empties) the proxy’s blocklist. This request does not affect the enabled/disabled state of the blocklist.
