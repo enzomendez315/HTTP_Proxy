@@ -7,7 +7,6 @@ from threading import *
 from time import *
 from urllib.parse import urlparse
 
-# Start of program execution
 # Parse out the command line server address and port number to listen to
 parser = OptionParser()
 # Proxy listens for incoming client connections on port number -p
@@ -29,28 +28,12 @@ listening_socket.bind((address, port))
 listening_socket.listen()
 listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-# FROM ASSIGNMENT: Once a client has connected, the proxy should read data
-# from the client and check for a properly formatted HTTP request.
-    # <METHOD> <URL> <HTTP VERSION>     first header
-    # <HEADER NAME>: <HEADER VALUE>     all other headers
-    # There must always be '\r\n' between lines and '\r\n\r\n' at the end.
-
 # Signal handler for pressing ctrl-c
 def ctrl_c_pressed(signal, frame):
 	sys.exit(0)
 
 # Set up signal handling (ctrl-c)
 signal.signal(signal.SIGINT, ctrl_c_pressed)
-
-# FROM ASSIGNMENT: Once the proxy has parsed the URL, it can make a connection
-# to the origin server and send the HTTP request for the appropriate object.
-    # Accept from client
-        # GET http://www.google.com/ HTTP/1.0
-    # Send to origin server
-        # GET / HTTP/1.0
-        # Host: www.google.com
-        # Connection: close
-        # (Additional client-specified headers, if any.)
 
 # Receives data from client and parses it to check that it is a valid request.
 # Sets up the server socket and sends the client request, then listens for 
