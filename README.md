@@ -5,7 +5,7 @@ its requests to the proxy. Upon receiving a client’s request, the proxy
 opens a connection to the server and passes on the request. The proxy receives 
 the reply from the server and then sends that reply back to the client.
 
-## Why use a proxy?
+# Why use a proxy?
 - Performance: By saving copies of the objects that it fetches, a proxy can 
   reduce the need to create connections to remote servers. This can reduce the 
   overall delay involved in retrieving an object, particularly if a server is 
@@ -25,8 +25,8 @@ the reply from the server and then sends that reply back to the client.
   (say an entire business or university), it becomes much harder to link a particular HTTP 
   transaction to a single computer or individual. 
   
-## Implementation
-### Building a basic proxy
+# Implementation
+## Building a basic proxy
 The first step was to build a basic proxy that was capable of accepting HTTP
 requests, forwarding requests to remote (origin) servers, and returning response data to a client. For simplicity, only the GET method is implemented. Methods that are formatted correctly but that try to implement a method other than GET (like POST or HEAD) will make the proxy return a '501 Not Implemented' error to the client.
 
@@ -56,10 +56,10 @@ Connection: close
 
 After the response from the server is received, the proxy sends the response message as-is to the client via the appropriate socket.
 
-### Handling multiple clients
+## Handling multiple clients
 I used Python's `threading` module so that the proxy can handle multiple clients at the same time. The proxy sits and waits for new connections, and once it accepts a new client it uses another socket that is then passed as an argument in the `Thread.start()` function. This way every new client is handled in a separate thread.
 
-### Caching and filtering
+## Caching and filtering
 When the proxy receives a request, it checks if the requested object is cached. If the object is stored locally, it returns the object from the cache, without contacting the origin server. If the object is not cached, the proxy retrieves the object from the origin server, returns it to the client and caches a copy for future requests.
 
 The cache can be enabled or disabled. When it is enabled, the proxy will check if it is stored locally. If not, the proxy requests the object from the server using a GET request. Otherwise, the proxy verifies that its cached copy is up to date ussing a "conditional GET" to the origin server. 
