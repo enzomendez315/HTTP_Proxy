@@ -23,9 +23,6 @@ if address is None:
 if port is None:
     port = 2100
 
-# FROM ASSIGNMENT: First thing is to establish a socket that the proxy
-# can use to listen for incoming connections.
-
 # Set up listening socket for incoming connections
 listening_socket = socket(AF_INET, SOCK_STREAM)
 listening_socket.bind((address, port))
@@ -71,7 +68,7 @@ def handle_client(client_socket, client_addr):
         if request.endswith(b'\r\n\r\n'):
             break
 
-    # DELETE LATER!!
+    # DELETE LATER
     print('-----------------------------------\r\n' + 
           'THIS IS THE ORIGINAL REQUEST:\r\n' + 
           request.decode('utf-8') + '\r\n' +
@@ -155,9 +152,8 @@ def handle_client(client_socket, client_addr):
                 temp = server_socket.recv(4096)
                 if (temp == b''):
                     break
-                reply += temp   # request += temp?
+                reply += temp
             string_reply = reply.decode('utf-8')
-            #string_reply = string_reply[string_reply.find('<'):None]
             string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
             string_reply += '\r\n\r\n'
             reply = string_reply.encode('utf-8')
@@ -183,9 +179,8 @@ def handle_client(client_socket, client_addr):
                 temp = server_socket.recv(4096)
                 if (temp == b''):
                     break
-                reply += temp   # request += temp?
+                reply += temp
             string_reply = reply.decode('utf-8')
-            #string_reply = string_reply[string_reply.find('<'):None]
             string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
             string_reply += '\r\n\r\n'
             reply = string_reply.encode('utf-8')
@@ -206,14 +201,13 @@ def handle_client(client_socket, client_addr):
             temp = server_socket.recv(4096)
             if (temp == b''):
                 break
-            reply += temp   # request += temp?
+            reply += temp
         string_reply = reply.decode('utf-8')
-        #string_reply = string_reply[string_reply.find('<'):None]
         string_reply = string_reply.replace('HTTP/1.1', 'HTTP/1.0')
         string_reply += '\r\n\r\n'
         reply = string_reply.encode('utf-8')
 
-        # DELETE LATER!!
+        # DELETE LATER
         print('-----------------------------------\r\n' + 
             'THIS IS THE REPLY SENT BACK:\r\n' + 
             reply.decode('utf-8') + '\r\n' +
@@ -291,7 +285,7 @@ def parse_request(request):
 
     new_request += '\r\n\r\n'
 
-    # DELETE LATER!!
+    # DELETE LATER
     print('-----------------------------------\r\n' + 
           'THIS IS THE PARSED REQUEST:\r\n' + 
           new_request + '\r\n' +
@@ -308,25 +302,6 @@ def parse_request(request):
           '-----------------------------------')
 
     return new_request, server_addr, server_port
-
-# Checks if proxy is already stored an object. If so, it verifies
-# that the cached copy is up to date. If necessary, the proxy
-# updates its cache with the most recent version.
-def cache(request):
-    # Check if the object is in the cache
-        # If it isn't, request it from server (using a GET request)
-        # and cache it. Only objects with "200 OK" responses should
-        # be cached.
-
-        # If it is, verify that it's up to date with a "conditional
-        # GET" to the server.
-            # If the object has not been modified since it was cached,
-            # send the cached version to client.
-
-            # Otherwise, the server's response will contain an updated
-            # version of the object.
-    
-    pass
 
 # Receive loop from client to proxy. This gathers requests that
 # will eventually be sent to the origin server.
