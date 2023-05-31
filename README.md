@@ -1,4 +1,4 @@
-# HTTP_Proxy
+# HTTP Proxy
 This program is an HTTP proxy that sits between the client and the server.
 Instead of sending requests directly to the server, the client sends all 
 its requests to the proxy. Upon receiving a client’s request, the proxy 
@@ -60,4 +60,36 @@ After the response from the server is received, the proxy sends the response mes
 I used Python's `threading` module so that the proxy can handle multiple clients at the same time. The proxy sits and waits for new connections, and once it accepts a new client it uses another socket that is then passed as an argument in the `Thread.start()` function. This way every new client is handled in a separate thread.
 
 ### Caching and filtering
+When the proxy receives a request, it checks if the requested object is cached. If the object is stored locally, it returns the object from the cache, without contacting the origin server. If the object is not cached, the proxy retrieves the object from the origin server, returns it to the client and caches a copy for future requests.
 
+The cache can be enabled or disabled. When it is enabled, the proxy will check if it is stored locally. If not, the proxy requests the object from the server using a GET request. Otherwise, the proxy verifies that its cached copy is up to date ussing a "conditional GET" to the origin server. 
+If the server's response indicates that the object has not been modified since it was cached, the proxy sends its current version. If the proxy's version is not updated, the server's response contains the updated version of the object, which is cached by the proxy and then sent to the client.
+
+The proxy's blocklist can also be enabled or disabled. When it is enabled, if a proxy receives a request that refers to a blocked site, the proxy does not make the request to the server. Instead, it returns a '403 Forbidden' error to the client.
+
+The blocklist is simply a list of strings to check against the host portion of the URI in the client’s request. If any string in the blocklist is a substring of the host portion of the URI, the client’s request is blocked.
+
+The initial state of both the cache and the blocklist is disabled. These are the following commands that will alter the state of these two objects:
+`/proxy/cache/enable`
+Enables the proxy’s cache; if it is already enabled, it does nothing. This request does not affect the contents of the cache. Future requests will consult the cache.
+
+`/proxy/cache/disable`
+Disables the proxy’s cache; if it is already disabled, it does nothing. This request does not affect the contents of the cache. Future requests will not consult the cache.
+
+`/proxy/cache/flush`
+Flushes (empties) the proxy’s cache. This request does not affect the enabled/disabled state of the cache.
+
+`/proxy/blocklist/enable`
+Enables the proxy’s blocklist; if it is already enabled, it does nothing. This request does not affect the contents of the blocklist. Future requests will consult the blocklist.
+
+`/proxy/blocklist/disable`
+Disables the proxy’s blocklist; if it is already disabled, it does nothing. This request does not affect the contents of the blocklist. Future requests will not consult the blocklist.
+
+`/proxy/blocklist/add/<string>`
+Adds the specified string to the proxy’s blocklist; if it is already in the blocklist, it does nothing.
+
+`/proxy/blocklist/remove/<string>`
+Removes the specified string from the proxy’s blocklist; if it is not already in the blocklist, it does nothing.
+
+`/proxy/blocklist/flush`
+Flushes (empties) the proxy’s blocklist. This request does not affect the enabled/disabled state of the blocklist.
