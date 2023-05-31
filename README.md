@@ -24,3 +24,32 @@ the reply from the server and then sends that reply back to the client.
   itself, rather than the individual clients. If many clients use the same proxy 
   (say an entire business or university), it becomes much harder to link a particular HTTP 
   transaction to a single computer or individual. 
+  
+## Implementation
+### Building a basic proxy
+The first step was to build a basic proxy that was capable of accepting HTTP
+requests, forwarding requests to remote (origin) servers, and returning response data to a client. For simplicity, only the GET method is implemented. Methods that are formatted correctly but that try to implement a method other than GET (like POST or HEAD) will make the proxy return a '501 Not Implemented' error to the client.
+
+When the proxy starts, it establishes a socket that it can use to listen for incoming connections. The proxy listens on a port specified on the command line and wait for incoming client connections. Once a client has connected, the proxy reads data from the client and checks for a properly formatted HTTP request. The request needs to be in its absolute URI form:
+```
+<METHOD> <URL> <HTTP VERSION>
+```
+If there are more headers, they need to have the following format:
+```
+<HEADER NAME>: <HEADER VALUE>
+```
+Any request that does not follow these specifications will generate a '400 Bad Request' error.
+
+Once the proxy receives and parses the URL, it makes a connection to the web server (using the appropriate remote port, or the default of 80 if none is specified) and sends the HTTP request for the appropriate object. The proxy sends the request in the relative URL + host header format regardless of how the request was received from the client.
+
+For example, this is a request that the proxy receives from the client:
+```
+GET http://www.google.com/ HTTP/1.0
+```
+And this is the request that is sent to the web server:
+```
+GET / HTTP/1.0
+Host: www.google.com
+Connection: close
+(Additional client-specified headers, if any.)
+```
