@@ -53,3 +53,11 @@ Host: www.google.com
 Connection: close
 (Additional client-specified headers, if any.)
 ```
+
+After the response from the server is received, the proxy sends the response message as-is to the client via the appropriate socket.
+
+### Handling multiple clients
+I used Python's `threading` module so that the proxy can handle multiple clients at the same time. The proxy sits and waits for new connections, and once it accepts a new client it uses another socket that is then passed as an argument in the `Thread.start()` function. This way every new client is handled in a separate thread.
+
+### Caching and filtering
+
