@@ -70,6 +70,7 @@ The proxy's blocklist can also be enabled or disabled. When it is enabled, if a 
 The blocklist is simply a list of strings to check against the host portion of the URI in the client’s request. If any string in the blocklist is a substring of the host portion of the URI, the client’s request is blocked.
 
 The initial state of both the cache and the blocklist is disabled. These are the following commands that will alter the state of these two objects:
+
 `/proxy/cache/enable`  
 Enables the proxy’s cache; if it is already enabled, it does nothing. This request does not affect the contents of the cache. Future requests will consult the cache.
 
